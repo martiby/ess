@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href='data:application/manifest+json,{"name": "ESS", "scope": "/", "display": "standalone"}'/>
+    <link rel="apple-touch-icon" href="apple-touch-icon-120x120.png" sizes="120x120">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            background-color: #fff;
+
+        }
+
+        .center-screen {
+            background: linear-gradient(180deg, #71ad7a 50%, #45b05c);
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 100vh;
+        }
+
+        form {
+            width: 80%;
+            max-width: 400px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #ddd 50%, #eee);
+            padding: 40px;
+        }
+
+        #password {
+            margin: 0;
+            width: 100%;
+            font-size: 28px;
+            margin-bottom: 30px;
+            padding: 16px 20px;
+            /*margin: 8px 0;*/
+            /*display: inline-block;*/
+            border: 1px solid #aaa;
+            background-color: #ffffff;
+            border-radius: 8px;
+            /*box-sizing: border-box;*/
+        }
+
+        #password:focus {
+            background-color: #fff;
+            outline: none !important;
+            border: 1px solid #dcdbdb;
+            box-shadow: 0 0 10px #719ECE;
+        }
+
+        #login {
+            margin: 0;
+            width: 100%;
+            font-size: 30px;
+
+            background-color: #417bbd;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+    </style>
+
+</head>
+<body>
+<div class="center-screen">
+    <form action="/login" method="POST">
+        <input type="password" id="password" name="password" autofocus="autofocus" style="text-align:center"><br><br>
+        <input id="login" type="submit" value="LOGIN">
+    </form>
+</body>
+</html>

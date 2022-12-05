@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta content="" name="description">
+    <meta content="Martin Steppuhn" name="author">
+    <title>FEED</title>
+</head>
+<body>
+<canvas height="300" id="chart" width="800"></canvas>
+<script>
+    window.onload = function () {
+
+        const color = ['#5899DA', '#E8743B', '#19A979', '#ED4A7B', '#945ECF', '#13A4B4', '#525DF4', '#BF399E', '#6C8893', '#EE6868', '#2F6497'];
+        const data = {
+            labels: chart.x,
+            datasets: [{data: chart.home, label: 'Home', backgroundColor: color[0], borderColor: color[0]},
+                {data: chart.grid, label: 'Grid', backgroundColor: color[1], borderColor: color[1]},
+                {data: chart.bat_feed, label: 'BAT-Feed', backgroundColor: color[3], borderColor: color[3]},
+                {data: chart.feed_set, label: 'Feed-Set', backgroundColor: color[5], borderColor: color[5]},
+                // {data: chart.charge_set, label: 'Charge-Set', backgroundColor: color[4], borderColor: color[4]},
+                // {data: chart.bat_charge, label: 'BAT-Charge', backgroundColor: color[2], borderColor: color[2]}
+            ]
+        };
+        var canvas = document.getElementById('chart')
+        var cht = new Chart(canvas, {type: 'line', data: data, options: {}});
+    }
+
+</script>
+<script src="lib/chart.js-3.8.0/chart.min.js"></script>
+<script src="/chart"></script>
+</body>
+</html>

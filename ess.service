@@ -1,0 +1,14 @@
+[Unit]
+Description=ESS
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 -u ess.py
+WorkingDirectory=/home/pi/ess
+StandardOutput=inherit
+StandardError=inherit
+Restart=no
+User=pi
+
+[Install]
+WantedBy=multi-user.target

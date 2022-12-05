@@ -1,0 +1,91 @@
+{
+  "ess": {
+    "mode": "auto",
+    "state": "auto_idle",
+    "set_p": 0,
+    "time": "2022-12-04 23:06:37",
+    "setting": 1,
+    "info": "Automatik - Bereit"
+  },
+  "meterhub": {
+    "time": "2022-12-04 23:06:35",
+    "timestamp": 1670187995,
+    "grid_imp_eto": 4800697,
+    "grid_exp_eto": 31296778,
+    "grid_p": 526,
+    "pv1_eto": 24902000,
+    "pv2_eto": 16554420,
+    "pv1_e_day": 513,
+    "pv2_e_day": 0,
+    "pv1_p": 0,
+    "pv2_p": 0,
+    "pv_p": 0,
+    "home_all_eto": 16385020,
+    "home_all_p": 504,
+    "home_p": 504,
+    "flat_eto": 67189,
+    "flat_p": 0,
+    "bat_imp_eto": 2171082,
+    "bat_exp_eto": 1143410,
+    "bat_p": 5,
+    "car_eto": 2936746,
+    "car_p": 0,
+    "car_e_cycle": 0,
+    "car_amp": 6,
+    "car_phase": 1,
+    "car_stop": true,
+    "car_state": "wait",
+    "water_vto": 1402473,
+    "car_pv_ready": false,
+    "car_plug": true,
+    "car_info": "PV - Laden gesperrt",
+    "bat_info": "Automatik - Bereit",
+    "bat_soc": 10,
+    "measure_time": 0.725
+  },
+  "bms": {
+    "u": 47.887,
+    "soc": 10,
+    "t": 18.4,
+    "ready": true,
+    "u_pack": [
+      47.866,
+      47.887
+    ],
+    "i_pack": [
+      0.0,
+      0.0
+    ],
+    "soc_pack": [
+      10,
+      11
+    ],
+    "cycle_pack": [
+      133,
+      377
+    ],
+    "t_pack": [
+      18.4,
+      18.0
+    ]
+  },
+  "multiplus": {
+    "device_state_id": 8,
+    "device_state_name": "bypass",
+    "mains_u": 229.8,
+    "mains_i": 0.48,
+    "inv_u": 229.8,
+    "inv_i": 0.29,
+    "inv_p": 2,
+    "out_p": -1,
+    "bat_u": 47.94,
+    "bat_i": 0.0,
+    "bat_p": 0,
+    "led_light": 1,
+    "led_blink": 0,
+    "led_info": [
+      "mains"
+    ],
+    "state": "on"
+  }
+}

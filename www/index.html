@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest"
+          href='data:application/manifest+json,{"name": "ESS", "scope": "/", "display": "standalone"}'/>
+
+    <link rel="apple-touch-icon" href="apple-touch-icon-120x120.png" sizes="120x120">
+    <meta name="author" content="Martin Steppuhn">
+    <link href="nobs.css?v={{version}}" rel="stylesheet">
+
+    <title>ESS</title>
+
+    <style>
+        select {
+            color: #606060 !important;
+        }
+
+        .bg-fill {
+            fill: #606060;
+        }
+
+        #container-main {
+            margin-right: auto !important;
+            margin-left: auto !important;
+            width: 100%;
+            position: relative;
+            min-height: 99vh;
+            padding-bottom: 60px;
+        }
+
+        @media (min-width: 576px) {
+            #container-main {
+                width: 90%;
+            }
+        }
+
+        @media (min-width: 768px) {
+        }
+
+        @media (min-width: 992px) {
+            #container-main {
+                width: 60%;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            #container-main {
+                width: 50%;
+            }
+        }
+
+        @media (min-width: 1400px) {
+            #container-main {
+                width: 40%;
+            }
+        }
+
+        #footer {
+            position: absolute;
+            font-size: 12px;
+            bottom: 0;
+            margin-bottom: 30px;
+            margin-left: auto;
+            margin-right: auto;
+            left: 0;
+            right: 0;
+            text-align: center;
+        }
+
+        table {
+            /*font-family: arial, sans-serif;*/
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        td, th {
+            border: 0;
+            text-align: left;
+            padding: 2px 5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #eeeeee;
+        }
+
+
+        .text-right {
+            text-align: right;
+
+        }
+
+        .bms-cell {
+            text-align: right;
+            width: 15%;
+        }
+
+
+        /*PFLOW MOD*/
+
+        .pft-row {
+            height: 75px;
+        }
+
+        .pft-icon-container {
+            height: 40px;
+            width: 40px;
+        }
+
+        .pft-row [data-id=power] {
+            font-size: 30px;
+        }
+
+        .pft-row [data-id=info] {
+            font-size: 15px;
+        }
+
+        .pft-row [data-id=subline] {
+            font-size: 15px;
+        }
+
+
+    </style>
+
+
+</head>
+<body>
+<div style="display: none">
+    <svg id="svg-bolt-lightning" viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg">
+        <!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+        <path d="M0 256L28.5 28c2-16 15.6-28 31.8-28H228.9c15 0 27.1 12.1 27.1 27.1c0 3.2-.6 6.5-1.7 9.5L208 160H347.3c20.2 0 36.7 16.4 36.7 36.7c0 7.4-2.2 14.6-6.4 20.7l-192.2 281c-5.9 8.6-15.6 13.7-25.9 13.7h-2.9c-15.7 0-28.5-12.8-28.5-28.5c0-2.3 .3-4.6 .9-6.9L176 288H32c-17.7 0-32-14.3-32-32z"/>
+    </svg>
+    <svg id="svg-info-round" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+        <path d="M256 512c141.4 0 256-114.6 256-256S397.4 0 256 0S0 114.6 0 256S114.6 512 256 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h8c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-144c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"/>
+    </svg>
+
+</div>
+
+<div id="container-main" class="container">
+
+    <!------------- Headline -------------->
+
+    <div id="headline" style="height: 30px; margin-top:8px; display: flex; align-items: center;" class="bg-fill">
+        <div style="margin-right: auto; height: 80%; display: flex;  align-items: center; width: 50%">
+            <div style="display: inline; height: 100%">
+                <svg viewBox="0 0 100 100" height="100%">
+                    <use href="#svg-bolt-lightning"></use>
+                </svg>
+            </div>
+            <div>ESS</div>
+        </div>
+        <div id="time"></div>
+        <div style="margin-left: auto; height: 70%; display: flex;  align-items: center; width: 50%">
+            <div id="info-logo" style="height: 100%; display: flex; margin-left: auto;">
+                <svg viewBox="0 0 100 100" height="100%">
+                    <use href="#svg-info-round"></use>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <hr style="margin-top: 2px; margin-bottom: 2px">
+
+    <!------------- PFlow Bars -------------->
+
+    <div id="pflow-bar" style="margin-top: 15px"></div>
+
+    <!------------- Debug-Buttons -------------->
+
+    <div class="" id="container-detail" style="display: none;">
+
+        <div class="row">
+            <!-- ***************  ESS System  ************************************** -->
+            <div class="col-12 col-lg-6">
+                <table id="ess-table">
+                    <tr>
+                        <th colspan="3">System</th>
+                        <th id="meterhub-title" colspan="2" style="border-radius: 5px">MeterHUB</th>
+                    </tr>
+                    <tr>
+                        <td>Sollwert</td>
+                        <td id="ess-set-p"></td>
+                        <td></td>
+                        <td>PV</td>
+                        <td id="meter-pv-p" class="text-right"></td>
+                    </tr>
+                    <tr>
+                        <td>Mode</td>
+                        <td id="ess-mode">?</td>
+                        <td></td>
+                        <td>Netz</td>
+                        <td id="meter-grid-p" class="text-right"></td>
+                    </tr>
+                    <tr id="ess-state-row">
+                        <td>State</td>
+                        <td id="ess-state">?</td>
+                        <td></td>
+                        <td>Haus</td>
+                        <td id="meter-home-p" class="text-right"></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>Batterie</td>
+                        <td id="meter-bat-p" class="text-right"></td>
+                    </tr>
+                    % if enable_heat:
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>Heizung</td>
+                        <td id="meter-heat-p" class="text-right"></td>
+                    </tr>
+                    % end
+
+                    % if enable_car:
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>Auto</td>
+                        <td id="meter-car-p" class="text-right"></td>
+                    </tr>
+                    % end
+                </table>
+            </div>
+
+            <!-- ************** Battery BMS *********************************** -->
+
+            <div class="col-12 col-lg-6">
+                <table id="bms-table">
+                    <tr>
+                        <th id="bms-title" style="border-radius: 5px" colspan="7">BMS</th>
+                    </tr>
+
+                    % for i in bms_cfg:
+                    <tr>
+                        <td><strong>{{i+1}}</strong></td>
+                        <td id="bms-soc{{i}}" class="bms-cell"></td>
+                        <td id="bms-p{{i}}" class="bms-cell"></td>
+                        <td id="bms-u{{i}}" class="bms-cell"></td>
+                        <td id="bms-i{{i}}" class="bms-cell"></td>
+                        <td id="bms-t{{i}}" class="bms-cell"></td>
+                        <td id="bms-cycle{{i}}" class="bms-cell"></td>
+                    </tr>
+                    % end
+
+                </table>
+            </div>
+
+            <!-- ***************  Multiplus  ************************************** -->
+
+            <div class="col-12 col-lg-6">
+                <table id="mp2-table">
+                    <tr>
+                        <th id="mp2-title" colspan="4" style="border-radius: 5px">MultiPlus-II</th>
+                    </tr>
+                    <tr>
+                        <td>State</td>
+                        <td id="mp2-state" class="text-right"></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>AC</td>
+                        <td id="mp2-inv-p" class="text-right"></td>
+                        <td id="mp2-mains-u" class="text-right"></td>
+                        <td id="mp2-mains-i" class="text-right"></td>
+                    </tr>
+                    <tr>
+                        <td>DC</td>
+                        <td id="mp2-bat-p" class="text-right"></td>
+                        <td id="mp2-bat-u" class="text-right"></td>
+                        <td id="mp2-bat-i" class="text-right"></td>
+                    </tr>
+
+                </table>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 30px;">
+            <div class="btn-group" style="width: 100%">
+                <button data-mode="off" type="button" style="width: 33.3%" class="btn btn-outline-primary">OFF</button>
+                <button data-mode="auto" type="button" style="width: 33.3%" class="btn btn-outline-primary">AUTO
+                </button>
+                <button data-mode="manual" type="button" style="width: 33.3%" class="btn btn-outline-primary">MANUAL
+                </button>
+            </div>
+
+            <button id="btn-error-reset" class="btn btn-danger" type="button" style="width: 100%; margin-top: 20px;">
+                Error Reset
+            </button>
+
+        </div>
+
+        <!------------- Manual - Container -------------->
+
+        <div id="container-manual" style="display: none;">
+            <div style="margin-top: 20px">
+                <label>
+                    <span>Charge:&nbsp;</span>
+                    <span id="manual-charge-info">0</span>
+                    <span>W</span>
+                </label>
+                <input id="manual-charge-slider" class="form-range" max="2000" min="0" step="10" type="range"
+                       value="0">
+            </div>
+            <div style="margin-top: 5px">
+                <label>
+                    <span>Feed:&nbsp;</span>
+                    <span id="manual-feed-info">0</span>
+                    <span>W</span>
+                </label>
+                <input id="manual-feed-slider" class="form-range" max="2400" min="0" step="10" type="range"
+                       value="0">
+            </div>
+            <div style="margin-top: 20px; margin-bottom: 30px; padding: 0; display: flex">
+                <div style="width: 50%; margin-right: 5px">
+                    <button id="btn-manual-wakeup" class="btn btn-secondary" style="width: 100%;" type="button">Wakeup
+                    </button>
+                </div>
+
+                <div style="width: 50%; margin-left: 5px">
+                    <button id="btn-manual-sleep" class="btn btn-secondary" style="width: 100%;" type="button">Sleep
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!------------- PFlow Bars + Tableview -------------->
+
+    <div id="pflow-table" style="margin-top: 18px; margin-bottom: 25px"></div>
+
+    <div style="margin-top: 30px;">
+        <select id="option-select" class="form-select form-select-lg">
+            % for i, name in enumerate(setting):
+            <option value="{{i}}">{{name}}</option>
+            % end
+        </select>
+    </div>
+    <div id="footer">ESS {{version}} - Martin Steppuhn</div>
+</div>
+
+<script>
+    let config_enable_car = {{'true' if enable_car else 'false'}};
+    let config_enable_heat = {{'true' if enable_heat else 'false'}};
+</script>
+
+
+<script src="pflow.js?v={{version}}"></script>
+<script src="app.js?v={{version}}"></script>
+<script src="utils.js?v={{version}}"></script>
+</body>
+</html>

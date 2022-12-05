@@ -1,0 +1,32 @@
+keine Steuerung / 0W
+
+mains on | bulk | inverter on |    BUS
+                                    0 off
+                        X           9 inverting     startup ohne Steuerung, nach Zeit ...
+    X                               8 passthru      keine Steuerung
+    X       X           X           3 bulk          0W
+    X       X                       3 bulk          laden
+    blink   X           X           3 bulk          entladen   (-)
+
+Battery, Grid, Setpoint
+laden       +
+einspeisen  -
+
+==========================================================
+
+Nur mains on:  DC:  4,6W  AC: 4,4W
+ohne AC:       DC: 13,2W  AC: ---
+OFF via BUS:   DC:  1,3W  AC: ---
+
+==========================================================
+Remote Eingang
+
+13,9V
+Strom mit Brücke: 540uA
+Funktion ab 2k2
+
+==========================================================
+
+Spannungsabfall @2400Watt auf Zuleitung: 130mV (Minus) 180mV (Plus mit Sicherung) = 310mV
+
+Differenz zwischen BMS der Batterie und Multiplus 470mV
