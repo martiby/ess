@@ -1,4 +1,4 @@
-# ESS
+# Energy Storage System
 
 Die ESS Software kann einen Victron Multiplus-II im netzparallelen Betrieb direkt ansteuern (**ohne** Venus GX, **ohne** Venus OS).
 Die PV Erzeugung und der Verbrauch des Gebäudes wird kontinuierlich erfasst. Bei Überschuss wird der Akku geladen. 
@@ -49,6 +49,8 @@ Die Regelung (Zykluszeit 750ms) wird mit den einzelnen Messungen visualisiert.
 
 
 ## Installation
+
+Die Library Chart.js `/www/lib/chart.js` ist nicht Bestandteil des Repositories. In der Releaseversion ist sie enthalten.     
 
 **Python**
  

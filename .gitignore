@@ -1,5 +1,5 @@
 .idea
 __pycache__
-/log
-/www/lib/chart.js-3.8.0/chart.js
-/www/lib/chart.js-3.8.0/chart.min.js
+/log/
+/release/
+/www/lib/chart.js-3.8.0/
