@@ -20,8 +20,9 @@ logging.basicConfig(level=logging.INFO,
 # logging.getLogger('meterhub').setLevel(logging.DEBUG) # enable debug logging for a specific module
 
 logging.getLogger('vebus').setLevel(logging.ERROR)
-# logging.getLogger('us2000').setLevel(logging.ERROR)
-logging.getLogger('us2000').setLevel(logging.CRITICAL)
+logging.getLogger('bms').setLevel(logging.ERROR)
+# logging.getLogger('bms').setLevel(logging.DEBUG)
+# logging.getLogger('bms').setLevel(logging.CRITICAL)
 logging.getLogger('meterhub').setLevel(logging.ERROR)
 
 app = App()

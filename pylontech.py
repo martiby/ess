@@ -5,7 +5,7 @@ Pylontech / US2000
 
 Packet and Framehandling. See demo_pylontech.py for a simple example. 
 
-30.11.2022  Martin Steppuhn     Split in pylontech.py (baisc packets) and us2000.py (threaded service class)   
+30.11.2022  Martin Steppuhn     Split in pylontech.py (basic packets) and us2000.py (threaded service class)   
 """
 
 

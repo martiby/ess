@@ -27,7 +27,7 @@ class App(FSM):
         self.trace = Trace()
         self.config = config
         self.meterhub = ApiRequest(config['meterhub_address'], timeout=0.5, lifetime=10, log_name='meterhub')
-        self.bms = US2000(port=config['pylontech_bms_port'], pack_number=config['us2000_pack_number'], lifetime=20, log_name='bms')
+        self.bms = US2000(port=config['pylontech_bms_port'], pack_number=config['us2000_pack_number'], lifetime=10, log_name='bms')
         self.multiplus = MultiPlus2(config['victron_mk3_port'])
 
         self.mode = 'off'  # Operation mode: 'off', 'auto', 'manual'
@@ -217,10 +217,10 @@ class App(FSM):
         return False
 
     def is_bms_error(self):
-        return True if self.bms.data and 'error' in self.bms.data else False
+        return True if self.bms.data['error'] else False
 
     def is_bms_ready(self):
-        return True if self.bms.data and 'ready' in self.bms.data else False
+        return self.bms.data['ready']
 
     def is_meterhub_ready(self):
         return True if self.meterhub.data and 'error' not in self.meterhub.data else False
