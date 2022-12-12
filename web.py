@@ -37,6 +37,7 @@ class AppWeb:
         self.web.route('/api/bms', callback=self.web_api_bms)  # full bms data in json format
         self.web.route('/log', callback=self.web_log)  # access to logfile
         self.web.route('/chart', callback=self.web_chart)  #
+        self.web.route('/blackbox', callback=lambda : "\n".join(self.app.blackbox.record_lines))  #
         self.web.route('/<filepath:path>', callback=self.web_static)  # hosting static files
 
         logging.getLogger('waitress.queue').setLevel(logging.ERROR)  # hide waitress info log

@@ -13,6 +13,7 @@ from timer import Timer
 from trace import Trace
 from utils import *
 from web import AppWeb
+from blackbox import Blackbox
 
 """
 ESS Application
@@ -21,7 +22,7 @@ ESS Application
 class App(FSM):
     def __init__(self):
         super().__init__('init')
-        self.www_path = 'www'
+        self.www_path = config['www_path']
         self.log = logging.getLogger('app')
         self.web = AppWeb(self)
         self.trace = Trace()
@@ -29,6 +30,7 @@ class App(FSM):
         self.meterhub = ApiRequest(config['meterhub_address'], timeout=0.5, lifetime=10, log_name='meterhub')
         self.bms = US2000(port=config['pylontech_bms_port'], pack_number=config['us2000_pack_number'], lifetime=10, log_name='bms')
         self.multiplus = MultiPlus2(config['victron_mk3_port'])
+        self.blackbox = Blackbox(length=50, path=config['log_path'])
 
         self.mode = 'off'  # Operation mode: 'off', 'auto', 'manual'
         self.set_p = 0  # power set value
@@ -99,7 +101,12 @@ class App(FSM):
             self.multiplus.update(pause_time=0.075)
             self.log.debug("multiplus {}".format(self.multiplus.data))
 
+            # === Blackbox ===================================================
+
+            self.blackbox.push(self.get_state(bms_detail=True))
+
             # ================================================================
+
 
             t_end = time.perf_counter()
             while time.perf_counter() < t_begin + 0.75:
@@ -257,6 +264,7 @@ class App(FSM):
     def fsm_error(self, entry):
         if entry:
             self.log.info("FSM: ERROR")
+            self.blackbox.dump()    # save blockbox data to file
             self.set_p = 0
 
     # ==================================================================================================================
@@ -423,7 +431,7 @@ class App(FSM):
             self.log.info("manual timer expired")
             self.mode = 'off'
 
-    def get_state(self):
+    def get_state(self, bms_detail=False):
         """
         Get current state as dictionary (for API)
 
@@ -440,6 +448,7 @@ class App(FSM):
             },
             'meterhub': self.meterhub.data,
             'bms': self.bms.data,
+            'bms_detail': self.bms.data_detail,
             'multiplus': self.multiplus.data,
         }
 
