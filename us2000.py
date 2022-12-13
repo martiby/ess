@@ -101,8 +101,10 @@ class US2000:
                     self.data_detail['analog_timeout'][i] = time.perf_counter() + self.lifetime
                 except IOError:
                     self.com = None
+                    self.data_detail['analog'][i] = None
                     self.log.error("read_analog_value: io port failed")
                 except Exception as e:
+                    self.data_detail['analog'][i] = None
                     self.log.debug("EXCEPTION read_analog_value[{}] {}".format(i, e))
 
                 self.update()
@@ -116,8 +118,10 @@ class US2000:
                     self.data_detail['alarm_timeout'][i] = time.perf_counter() + self.lifetime
                 except IOError:
                     self.com = None
+                    self.data_detail['alarm'][i] = None
                     self.log.error("read_alarm_info: io port failed")
                 except Exception as e:
+                    self.data_detail['alarm'][i] = None
                     self.log.debug("EXCEPTION read_alarm_info[{}] {}".format(i, e))
 
                 self.update()
@@ -145,29 +149,35 @@ class US2000:
                 if self.data_detail['analog'][i]:
                     self.data['u_pack'][i] = self.data_detail['analog'][i]['u']
                     self.data['i_pack'][i] = self.data_detail['analog'][i]['i']
+                    self.data['t_pack'][i] = max(self.data_detail['analog'][i]['t'])
                     self.data['soc_pack'][i] = self.data_detail['analog'][i]['soc']
                     self.data['cycle_pack'][i] = self.data_detail['analog'][i]['cycle']
-                    self.data['t_pack'][i] = max(self.data_detail['analog'][i]['t'])
+
             except Exception:
                 self.log.exception("update failed")
                 pass
 
-            if t > self.data_detail['analog_timeout'][i]:
-                self.data_detail['analog'][i] = None
+            if t > self.data_detail['analog_timeout'][i] or t > self.data_detail['alarm_timeout'][i]:
+                self.data['u_pack'][i] = None
+                self.data['i_pack'][i] = None
+                self.data['t_pack'][i] = None
+                self.data['soc_pack'][i] = None
+                self.data['cycle_pack'][i] = None
+
                 error = 'timeout'
                 ready = False
 
-            if t > self.data_detail['alarm_timeout'][i]:
-                self.data_detail['alarm'][i] = None
-                error = 'timeout'
-                ready = False
 
         try:
             self.data['u'] = max(self.data['u_pack'])
+            self.data['i'] = sum(self.data['i_pack'])
             self.data['t'] = max(self.data['t_pack'])
             self.data['soc'] = round(sum(self.data['soc_pack']) / self.pack_number)
         except:
-            pass
+            self.data['u'] = None
+            self.data['i'] = None
+            self.data['t'] = None
+            self.data['soc'] = None
 
         self.data['error'] = error
         self.data['ready'] = ready

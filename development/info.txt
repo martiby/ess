@@ -30,3 +30,6 @@ Funktion ab 2k2
 Spannungsabfall @2400Watt auf Zuleitung: 130mV (Minus) 180mV (Plus mit Sicherung) = 310mV
 
 Differenz zwischen BMS der Batterie und Multiplus 470mV
+
+
+https://www.victronenergy.com/live/battery_compatibility:pylontech_phantom

@@ -10,10 +10,15 @@ config = {
     'www_path': "www",  # path for static webserver files
     'log_path': "log",  # log path
 
+    # the blackbox stores the specified number of records in /log/blackbox-*.jsonl in case of error
+    'blackbox_size': 80,  # Number of data sets, storage time: n * 750ms
+    # in the event of a DC voltage drop, the number is stored before and additionally after, as with the black box.
+    'ubat_scope_enable': True,
+
     'enable_car': True,  # Show car values on dashboard
     'enable_heat': False,  # Show heater values on dashboard
 
-    'udc_max': 53,  # maximum voltage
+    'udc_max': 53,  # maximum voltage (only checked at BMS, MP2 has peaks ?! ToDo !!!)
     't_max': 40,  # maximum temperature
 
     # The setting [0] is used as default, undefined values from other settings [1, ...] are used from the setting [0]

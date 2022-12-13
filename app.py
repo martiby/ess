@@ -5,19 +5,20 @@ from datetime import datetime
 
 import version
 from api_request import ApiRequest
+from blackbox import Blackbox
 from config import config
 from fsm import FSM
 from multiplus2 import MultiPlus2
-from us2000 import US2000
 from timer import Timer
 from trace import Trace
+from us2000 import US2000
 from utils import *
 from web import AppWeb
-from blackbox import Blackbox
 
 """
 ESS Application
 """
+
 
 class App(FSM):
     def __init__(self):
@@ -28,9 +29,14 @@ class App(FSM):
         self.trace = Trace()
         self.config = config
         self.meterhub = ApiRequest(config['meterhub_address'], timeout=0.5, lifetime=10, log_name='meterhub')
-        self.bms = US2000(port=config['pylontech_bms_port'], pack_number=config['us2000_pack_number'], lifetime=10, log_name='bms')
+        self.bms = US2000(port=config['pylontech_bms_port'],
+                          pack_number=config['us2000_pack_number'],
+                          lifetime=30,
+                          log_name='bms')
         self.multiplus = MultiPlus2(config['victron_mk3_port'])
-        self.blackbox = Blackbox(length=50, path=config['log_path'])
+        self.blackbox = Blackbox(size=config['blackbox_size'],
+                                 ubat_scope_enable=config['ubat_scope_enable'],
+                                 path=config['log_path'])
 
         self.mode = 'off'  # Operation mode: 'off', 'auto', 'manual'
         self.set_p = 0  # power set value
@@ -107,7 +113,6 @@ class App(FSM):
 
             # ================================================================
 
-
             t_end = time.perf_counter()
             while time.perf_counter() < t_begin + 0.75:
                 time.sleep(0.01)
@@ -144,7 +149,6 @@ class App(FSM):
 
         self.ubat = dictget(self.bms.data, 'u')
 
-
     def fsm_switch(self):
         """
         Auto state change by events
@@ -152,9 +156,9 @@ class App(FSM):
         if dictget(self.bms.data, 'u', 0) > self.config['udc_max']:
             self.log.error("error max voltage at bms {}".format(self.bms.data))
             self.set_fsm_state('error')
-        elif dictget(self.multiplus.data, 'bat_u', 0) > self.config['udc_max']:
-            self.log.error("error max voltage at multiplus {}".format(self.multiplus.data))
-            self.set_fsm_state('error')
+        # elif dictget(self.multiplus.data, 'bat_u', 0) > self.config['udc_max']:
+        #     self.log.error("error max voltage at multiplus {}".format(self.multiplus.data))
+        #     self.set_fsm_state('error')
         elif dictget(self.bms.data, 't', 0) > self.config['t_max']:
             self.log.error("error max bms temperature {}".format(self.bms.data))
             self.set_fsm_state('error')
@@ -264,7 +268,7 @@ class App(FSM):
     def fsm_error(self, entry):
         if entry:
             self.log.info("FSM: ERROR")
-            self.blackbox.dump()    # save blockbox data to file
+            self.blackbox.dump()  # save blockbox data to file
             self.set_p = 0
 
     # ==================================================================================================================
@@ -437,7 +441,7 @@ class App(FSM):
 
         :return: dictionary
         """
-        return {
+        d = {
             'ess': {
                 'mode': self.mode,
                 'state': self._fsm_state,
@@ -448,9 +452,11 @@ class App(FSM):
             },
             'meterhub': self.meterhub.data,
             'bms': self.bms.data,
-            'bms_detail': self.bms.data_detail,
             'multiplus': self.multiplus.data,
         }
+        if bms_detail:
+            d['bms_detail'] = self.bms.data_detail
+        return d
 
     def get_info_text(self):
         """
