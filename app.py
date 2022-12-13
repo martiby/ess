@@ -356,7 +356,14 @@ class App(FSM):
 
         try:
             p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
-            feed_set_p = limit(p, 0, self.get_setting('feed_max_power'))  # limit to 0..max
+
+            if self.soc_low <= 25:
+                max_p = self.get_setting('feed_soc25_max_power')
+            else:
+                max_p = self.get_setting('feed_max_power')
+
+
+            feed_set_p = limit(p, 0, max_p)  # limit to 0..max
 
             # ------ throttle --------------
             if not self.feed_throttle:

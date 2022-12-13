@@ -37,12 +37,15 @@ config = {
 
             'feed_min_power': 40,  # [W] Minimum feed power
             'feed_max_power': 2000,  # [W] Maximum feed power
+            'feed_soc25_max_power': 1500,  # [W] Maximum feed power below 25% SOC
             'feed_reserve_power': 30,  # [W] "Distance" consumption to feed-in power
             'feed_end_soc': 10,  # [%] SOC at which feed-in is terminated
             'feed_hysteresis_soc': 5,  # [%] SOC restart hysteresis
             'feed_end_voltage': 47.0,  # [V] Voltage at which the feed is terminated
             'feed_start_time': 30,  # [s] Time in which the start condition for the feed must exist
             'feed_stop_time': 30,  # [s] Delay time in feed-in operation without feed-in
+
+
 
             'feed_throttle_time': 5 * 60,  # [s] longer feeds in one piece are limited
             'feed_throttle_power': 1500,  # [W] Performance limit with throttling
@@ -56,6 +59,7 @@ config = {
             'charge_reserve_power': 25,
             'charge_start_time': 10,
             'charge_stop_time': 5,
+            'feed_soc25_max_power': 750,
         },
         {
             'name': 'Maximal-Entladen (Sommer)',
