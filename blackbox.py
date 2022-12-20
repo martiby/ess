@@ -15,14 +15,12 @@ class Blackbox:
     dump(): Save lines of JSON to file, e.g.: blackbox-2022-11-21 144132.jsonl
     """
 
-    def __init__(self, size, ubat_scope_enable=False, path=''):
+    def __init__(self, size, path=''):
         self.path = path
         self.log = logging.getLogger('blackbox')
         self.record_lines = []
         self.size = size
         os.makedirs(path, exist_ok=True)
-        self.ubat_scope_enable = ubat_scope_enable
-        self.scope_trigger = False
 
     def push(self, dataset):
         """
@@ -30,22 +28,7 @@ class Blackbox:
         :param dataset: dictionary
         """
         self.record_lines.append(json.dumps(dataset) + '\n')
-
-        if self.ubat_scope_enable:    # scope enabled
-            ubat = 100
-            for i in range(len(dictget(dataset, ('bms_detail', 'analog'), default=0))):
-                u = dictget(dataset, ('bms_detail', 'analog', i, 'u'), default=0)
-                if u < ubat:
-                    ubat = u
-            if not self.scope_trigger and ubat < 42 and len(self.record_lines) >= self.size:
-                self.scope_trigger = True
-                self.log.info("scope trigger")
-
-        if not self.scope_trigger:
-            self.record_lines = self.record_lines[-self.size:]  # limit to latest
-        elif len(self.record_lines) >= 2 * self.size:
-            self.dump('scope')
-            self.scope_trigger = False
+        self.record_lines = self.record_lines[-self.size:]  # limit to latest
 
 
     def dump(self, prefix='blackbox'):

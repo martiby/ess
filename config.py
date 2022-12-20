@@ -12,8 +12,6 @@ config = {
 
     # the blackbox stores the specified number of records in /log/blackbox-*.jsonl in case of error
     'blackbox_size': 80,  # Number of data sets, storage time: n * 750ms
-    # in the event of a DC voltage drop, the number is stored before and additionally after, as with the black box.
-    'ubat_scope_enable': True,
 
     'enable_car': True,  # Show car values on dashboard
     'enable_heat': False,  # Show heater values on dashboard
@@ -67,7 +65,16 @@ config = {
             'feed_reserve_power': 10,
             'feed_start_time': 10,
             'feed_stop_time': 5,
-        }
+        },
+        {
+            'name': 'Nur Laden (Winter)',
+            'charge_min_power': 200,
+            'charge_max_power': 1600,
+            'charge_reserve_power': 25,
+            'charge_start_time': 10,
+            'charge_stop_time': 5,
+            'feed_end_soc': 150,     # never start feeding
+        },
 
     ]
 
