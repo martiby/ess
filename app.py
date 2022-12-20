@@ -34,7 +34,9 @@ class App(FSM):
                           lifetime=30,
                           log_name='bms')
         self.multiplus = MultiPlus2(config['victron_mk3_port'])
-        self.blackbox = Blackbox(size=config['blackbox_size'], path=config['log_path'])
+        self.blackbox = Blackbox(size=config['blackbox_size'],
+                                 path=config['log_path'],
+                                 csv_config=config.get('csv_log', None))
 
         self.mode = 'off'  # Operation mode: 'off', 'auto', 'manual'
         self.set_p = 0  # power set value

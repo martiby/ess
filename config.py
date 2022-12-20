@@ -43,8 +43,6 @@ config = {
             'feed_start_time': 30,  # [s] Time in which the start condition for the feed must exist
             'feed_stop_time': 30,  # [s] Delay time in feed-in operation without feed-in
 
-
-
             'feed_throttle_time': 5 * 60,  # [s] longer feeds in one piece are limited
             'feed_throttle_power': 1500,  # [W] Performance limit with throttling
 
@@ -73,9 +71,24 @@ config = {
             'charge_reserve_power': 25,
             'charge_start_time': 10,
             'charge_stop_time': 5,
-            'feed_end_soc': 150,     # never start feeding
+            'feed_end_soc': 150,  # never start feeding
         },
 
-    ]
+    ],
+
+    # enable csv log
+    # 'csv_log': {'interval': 60,   # storage interval in seconds
+    #             'columns': [      # first entry is the name, second and so on the route inside main dataset /api/state
+    #                 ('time', 'ess', 'time'),
+    #                 ('state', 'ess', 'state'),
+    #                 ('bat_ac_p', 'meterhub', 'bat_p'),
+    #                 ('mp2_bat_u', 'multiplus', 'bat_u'),
+    #                 ('mp2_bat_i', 'multiplus', 'bat_i'),
+    #                 ('bms_u0', 'bms', 'u_pack', 0),
+    #                 ('bms_u1', 'bms', 'u_pack', 1),
+    #                 ('bms_i0', 'bms', 'i_pack', 0),
+    #                 ('bms_i1', 'bms', 'i_pack', 1),
+    #                 ('bms_soc0', 'bms', 'soc_pack', 0),
+    #                 ('bms_soc1', 'bms', 'soc_pack', 1)]},
 
 }
