@@ -49,6 +49,13 @@ config = {
             'idle_sleep_time': 10 * 60,  # [s] Sleeptimer, (idle --> sleep) Multiplus
         },
         {
+            'name': 'Maximal-Entladen (Sommer)',
+            'feed_max_power': 2400,
+            'feed_reserve_power': 10,
+            'feed_start_time': 10,
+            'feed_stop_time': 5,
+        },
+        {
             'name': 'Maximal-Laden (Winter)',
             'charge_min_power': 200,
             'charge_max_power': 1600,
@@ -58,14 +65,7 @@ config = {
             'feed_soc25_max_power': 750,
         },
         {
-            'name': 'Maximal-Entladen (Sommer)',
-            'feed_max_power': 2400,
-            'feed_reserve_power': 10,
-            'feed_start_time': 10,
-            'feed_stop_time': 5,
-        },
-        {
-            'name': 'Nur Laden (Winter)',
+            'name': 'Nur Laden',
             'charge_min_power': 200,
             'charge_max_power': 1600,
             'charge_reserve_power': 25,
@@ -73,22 +73,35 @@ config = {
             'charge_stop_time': 5,
             'feed_end_soc': 150,  # never start feeding
         },
+        {
+            'name': 'Max-Laden / 20% Reserve',
+            'charge_min_power': 200,
+            'charge_max_power': 1600,
+            'charge_reserve_power': 25,
+            'charge_start_time': 10,
+            'charge_stop_time': 5,
+            'feed_soc25_max_power': 750,
+            'feed_max_power': 1000,  # [W] Maximum feed power
+            'feed_reserve_power': 50,  # [W] "Distance" consumption to feed-in power
+            'feed_end_soc': 20,  # [%] SOC at which feed-in is terminated
+            'feed_hysteresis_soc': 10,  # [%] SOC restart hysteresis
+        }
 
     ],
 
     # enable csv log
-    # 'csv_log': {'interval': 60,   # storage interval in seconds
-    #             'columns': [      # first entry is the name, second and so on the route inside main dataset /api/state
-    #                 ('time', 'ess', 'time'),
-    #                 ('state', 'ess', 'state'),
-    #                 ('bat_ac_p', 'meterhub', 'bat_p'),
-    #                 ('mp2_bat_u', 'multiplus', 'bat_u'),
-    #                 ('mp2_bat_i', 'multiplus', 'bat_i'),
-    #                 ('bms_u0', 'bms', 'u_pack', 0),
-    #                 ('bms_u1', 'bms', 'u_pack', 1),
-    #                 ('bms_i0', 'bms', 'i_pack', 0),
-    #                 ('bms_i1', 'bms', 'i_pack', 1),
-    #                 ('bms_soc0', 'bms', 'soc_pack', 0),
-    #                 ('bms_soc1', 'bms', 'soc_pack', 1)]},
+    'csv_log': {'interval': 60,   # storage interval in seconds
+                'columns': [      # first entry is the name, second and so on the route inside main dataset /api/state
+                    ('time', 'ess', 'time'),
+                    ('state', 'ess', 'state'),
+                    ('bat_ac_p', 'meterhub', 'bat_p'),
+                    ('mp2_bat_u', 'multiplus', 'bat_u'),
+                    ('mp2_bat_i', 'multiplus', 'bat_i'),
+                    ('bms_u0', 'bms', 'u_pack', 0),
+                    ('bms_u1', 'bms', 'u_pack', 1),
+                    ('bms_i0', 'bms', 'i_pack', 0),
+                    ('bms_i1', 'bms', 'i_pack', 1),
+                    ('bms_soc0', 'bms', 'soc_pack', 0),
+                    ('bms_soc1', 'bms', 'soc_pack', 1)]},
 
 }

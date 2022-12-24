@@ -35,6 +35,7 @@ class AppWeb:
         self.web.route('/api/state/<state>', callback=self.web_api_state)
         self.web.route('/api/set', callback=self.web_api_set, method=('GET', 'POST'))
         self.web.route('/api/bms', callback=self.web_api_bms)  # full bms data in json format
+        self.web.route('/debug/<cmd>', callback=self.web_debug_cmd)  # debug commands
         self.web.route('/log', callback=self.web_log)  # access to logfile
         self.web.route('/chart', callback=self.web_chart)  #
         self.web.route('/blackbox', callback=lambda : "\n".join(self.app.blackbox.record_lines))  #
@@ -178,6 +179,18 @@ class AppWeb:
         """
         response.content_type = 'application/json'
         return json.dumps(self.app.bms.data_detail)
+
+    def web_debug_cmd(self, cmd):
+        """
+
+        """
+        if cmd == 'mp2online':
+            s = "mp2online debug command"
+            self.app.multiplus.online = True
+        else:
+            s = "unknown debug command: {}".format(cmd)
+        self.log.info(s)
+        return s
 
     def web_chart(self):
         """
