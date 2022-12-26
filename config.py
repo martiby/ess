@@ -3,6 +3,7 @@ config = {
     'victron_mk3_port': '/dev/serial/by-id/usb-VictronEnergy_MK3-USB_Interface_HQ2132VK4JK-if00-port0',
     'pylontech_bms_port': "/dev/serial/by-path/platform-3f980000.usb-usb-0:1.3:1.0",  # Raspberry Home (rechts oben)
     'us2000_pack_number': 2,  # number of Pylontech packs
+    'us2000_baudrate': 115200,  # Baudrate for Pylontech BMS
 
     'password': '1234',  # Password for web access
 

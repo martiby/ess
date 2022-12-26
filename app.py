@@ -31,6 +31,7 @@ class App(FSM):
         self.meterhub = ApiRequest(config['meterhub_address'], timeout=0.5, lifetime=10, log_name='meterhub')
         self.bms = US2000(port=config['pylontech_bms_port'],
                           pack_number=config['us2000_pack_number'],
+                          baudrate=config['us2000_baudrate'],
                           lifetime=30,
                           log_name='bms')
         self.multiplus = MultiPlus2(config['victron_mk3_port'])
