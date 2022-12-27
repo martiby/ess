@@ -187,6 +187,8 @@ class AppWeb:
         if cmd == 'mp2online':
             s = "mp2online debug command"
             self.app.multiplus.online = True
+        elif cmd == 'bmsstats':
+            return self.app.bms.stats
         else:
             s = "unknown debug command: {}".format(cmd)
         self.log.info(s)

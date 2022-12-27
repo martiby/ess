@@ -75,6 +75,10 @@ class US2000:
                             "analog_timeout": [time.perf_counter() + self.lifetime] * pack_number,
                             "alarm_timeout": [time.perf_counter() + self.lifetime] * pack_number}
 
+        self.stats = {"frame_count": 0,
+                      "error_analog": [0]*self.pack_number,
+                      "error_alarm": [0]*self.pack_number}
+
         self.connect()
         self.thread = Thread(target=self.run, daemon=True)
         self.thread.start()
@@ -91,6 +95,8 @@ class US2000:
         while True:
             if self.com is None:
                 self.connect()
+            else:
+                self.stats['frame_count'] += 1    # count read cycle
 
             for i in range(self.pack_number):
                 try:
@@ -105,6 +111,7 @@ class US2000:
                     self.log.error("read_analog_value: io port failed")
                 except Exception as e:
                     self.data_detail['analog'][i] = None
+                    self.stats['error_analog'][i] += 1  # count error
                     self.log.debug("EXCEPTION read_analog_value[{}] {}".format(i, e))
 
                 self.update()
@@ -122,10 +129,13 @@ class US2000:
                     self.log.error("read_alarm_info: io port failed")
                 except Exception as e:
                     self.data_detail['alarm'][i] = None
+                    self.stats['error_alarm'][i] += 1  # count error
                     self.log.debug("EXCEPTION read_alarm_info[{}] {}".format(i, e))
 
                 self.update()
                 time.sleep(self.pause)
+
+
 
 
 
