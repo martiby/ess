@@ -208,8 +208,8 @@ class AppWeb:
             grid = dictget(t, ('meterhub', 'grid_p'))
             bat = dictget(t, ('meterhub', 'bat_p'))
             home_all = dictget(t, ('meterhub', 'home_all_p'))
-            car = dictget(t, ('meterhub', 'car_p'))
-            home = home_all - car
+            car = dictget(t, ('meterhub', 'car_p'), 0)
+            home = dictget(t, ('meterhub', 'home_p'))
 
             set_p = dictget(t, ('ess', 'set_p'))
             try:

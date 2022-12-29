@@ -32,6 +32,7 @@ app.init = function () {
             out: [
                 {id: 'home', type: 'home'},
                 {id: 'car', type: 'car'},
+                {id: 'heat', type: 'heat'},
                 {id: 'bat', type: 'bat'},
                 {id: 'grid', type: 'grid', sign: -1}]
         }
@@ -39,6 +40,7 @@ app.init = function () {
 
     if(config_enable_heat) {
         pflow_config.table.push({id: 'heat', type: 'heat', sign: -1});
+
     }
 
     if(config_enable_car) {
@@ -222,6 +224,9 @@ app.show_dashboard_state = function (state) {
             wallbox_amp: (state?.meterhub?.car_phase && state?.meterhub?.car_amp) ? state?.meterhub?.car_phase + 'x' + state?.meterhub?.car_amp + 'A' : 'xxx'
 
         },
+        heat: {
+            power: state?.meterhub?.heat_p
+        },
         grid: {
             power: state?.meterhub?.grid_p
         }
@@ -263,16 +268,16 @@ app.show_detail_values = function (state) {
     $id('ess-state').textContent = state?.ess?.state ?? '?';
 
     // Meterhub
-    let car_p = state?.meterhub?.car_p;
-    let home_all_p = state?.meterhub?.home_all_p;
-    let home_p = home_all_p === null || car_p === null ? home_all_p : home_all_p - car_p;
+    // let car_p = state?.meterhub?.car_p;
+    // let home_all_p = state?.meterhub?.home_all_p;
+    // let home_p = home_all_p === null || car_p === null ? home_all_p : home_all_p - car_p;
 
     set_val('meter-pv-p', state?.meterhub?.pv_p, ' W');
     set_val('meter-grid-p', state?.meterhub?.grid_p, ' W');
-    set_val('meter-home-p', home_p, ' W');
+    set_val('meter-home-p', state?.meterhub?.home_p, ' W');
     set_val('meter-bat-p', state?.meterhub?.bat_p, ' W');
-    if(config_enable_car) set_val('meter-car-p', car_p, ' W');
-    if(config_enable_heat) set_val('meter-heat-p', car_p, ' W');
+    if(config_enable_car) set_val('meter-car-p', state?.meterhub?.car_p, ' W');
+    if(config_enable_heat) set_val('meter-heat-p', state?.meterhub?.heat_p, ' W');
 
     // Multiplus
     $id('mp2-state').textContent = state?.multiplus?.state ?? '--';
