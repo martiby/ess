@@ -6,6 +6,7 @@ Pylontech / US2000
 Packet and Framehandling. See demo_pylontech.py for a simple example. 
 
 30.11.2022  Martin Steppuhn     Split in pylontech.py (basic packets) and us2000.py (threaded service class)   
+31.12.2022  Martin Steppuhn     US3000 Quickhack
 """
 
 
@@ -17,6 +18,11 @@ def read_analog_value(com, address):
     RX: b'~20024600C06E10020F0C9A0C980C990C980C9A0C9A0C990C9B0C9C0C9A0C9B0C9B0C9B0C9B0C99050B740B550B570B530B630000BD06190F02C3500084E545\r'
 
     {'u_cell': (3226, 3224, 3225, 3224, 3226, 3226, 3225, 3227, 3228, 3226, 3227, 3227, 3227, 3227, 3225), 't': [20.1, 17.0, 17.2, 16.8, 18.4], 'q': 6415, 'q_total': 50000, 'cycle': 132, 'i': 0.0, 'u': 48.39, 'soc': 13}
+
+    US3000
+    TX: b'~20024642E00202FD33\r'
+    RX: b'~20024600F07A00020F0CC90CC90CC80CC90CC80CC80CC80CC90CC90CC90CC80CC90CC90CC80CC8050BA10B8A0B870B840B910000BFC0FFFF04FFFF0000007968012110E211\r'
+
 
     :param com: PySerial
     :param address: Address 0, ...
@@ -40,6 +46,27 @@ def parse_analog_value(frame):
     """
     Parser for analog value packet
 
+    US2000  RX: b'~20024600C06E10020F0C9A0C980C990C980C9A0C9A0C990C9B0C9C0C9A0C9B0C9B0C9B0C9B0C99050B740B550B570B530B630000BD06190F02C3500084E545\r'
+    US3000  RX: b'~20024600F07A00020F0CC90CC90CC80CC90CC80CC80CC80CC90CC90CC90CC80CC90CC90CC80CC8050BA10B8A0B870B840B910000BFC0FFFF04FFFF0000007968012110E211\r'
+
+    US2000  20 02 46 00 C0 6E 10 02
+            0F
+            0C9A 0C98 0C99 0C98 0C9A 0C9A 0C99 0C9B 0C9C 0C9A 0C9B 0C9B 0C9B 0C9B 0C99
+            05
+            0B74 0B55 0B57 0B53 0B63
+            0000 BD06 190F 02 C350 0084    current, voltage, q, ?, q_total, cycle
+            E545   Checksum
+
+    US3000  20 02 46 00 F0 7A 00 02
+            0F
+            0CC9 0CC9 0CC8 0CC9 0CC8 0CC8 0CC8 0CC9 0CC9 0CC9 0CC8 0CC9 0CC9 0CC8 0CC8
+            05
+            0BA1 0B8A 0B87 0B84 0B91
+            0000 BFC0 FFFF 04 FFFF 0000
+            007968 012110
+            E211    Checksum
+
+
     :param frame: bytes
     :return: dictionary
     """
@@ -51,9 +78,19 @@ def parse_analog_value(frame):
     temp = struct.unpack_from(">HHHHH", frame, p + 32)
     d['t'] = [(t - 2731) / 10 for t in temp]
     # Ampere, positive (charge), negative (discharge), with 100mA steps
-    current, voltage, d['q'], d['q_total'], d['cycle'] = struct.unpack_from(">hHHxHH", frame, p + 42)
+    current, voltage, q1, id, q1_total, d['cycle'] = struct.unpack_from(">hHHbHH", frame, p + 42)
     d['i'] = current / 10
     d['u'] = voltage / 1000
+
+    if id == 4:   # US3000
+        p = p + 42 + 11
+        d['q'] = struct.unpack(">I", b'\x00' + frame[p:p+3])[0]
+        p += 3
+        d['q_total'] = struct.unpack(">I", b'\x00' + frame[p:p + 3])[0]
+    else:
+        d['q'] = q1
+        d['q_total'] = q1_total
+
     d['soc'] = round(100 * d['q'] / d['q_total'])
     return d
 
