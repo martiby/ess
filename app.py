@@ -50,7 +50,6 @@ class App(FSM):
         self.grid_p = 0
         self.home_p = 0
         self.home_all_p = 0
-        self.bat_p = 0
         self.car_p = 0
         self.pv_p = 0
         self.soc = None
@@ -127,7 +126,6 @@ class App(FSM):
         Acquire all incoming data
         """
         self.grid_p = dictget(self.meterhub.data, 'grid_p')
-        self.bat_p = dictget(self.meterhub.data, 'grid_p')
         self.car_p = dictget(self.meterhub.data, 'car_p')
         self.pv_p = dictget(self.meterhub.data, 'pv_p')
         self.home_all_p = dictget(self.meterhub.data, 'home_all_p')
