@@ -227,7 +227,7 @@ class VEBus:
                  'bat_u': round(bat_u / 100, 2),
                  'bat_i': round(bat_i / 10, 1),
                  'bat_p': round(bat_u / 100 * bat_i / 10),
-                 'soc': soc}
+                 'soc': round(soc / 2, 1)}
             self.log.info("read_snapshot: {}".format(r))
             return r
         except IOError:

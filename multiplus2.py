@@ -41,9 +41,12 @@ class MultiPlus2:
             if self.vebus.init_address():
                 time.sleep(0.1)
                 if self.vebus.scan_ess_assistant():
+                    self.log.info("ess assistant setpoint ramid={}".format(self.vebus.ess_setpoint_ram_id))
                     self.data['state'] = 'init'
                     self.online = True
                     self.data_timeout = time.perf_counter() + self.timeout  # start timeout
+
+
 
     def command(self, power):
         if self.online:
