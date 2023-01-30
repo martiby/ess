@@ -11,9 +11,11 @@ from fsm import FSM
 from multiplus2 import MultiPlus2
 from timer import Timer
 from trace import Trace
-from us2000 import US2000
+from bms_us2000 import US2000
 from utils import *
 from web import AppWeb
+
+from bms_dummy import BMS_DUMMY
 
 """
 ESS Application
@@ -29,11 +31,15 @@ class App(FSM):
         self.trace = Trace()
         self.config = config
         self.meterhub = ApiRequest(config['meterhub_address'], timeout=0.5, lifetime=10, log_name='meterhub')
-        self.bms = US2000(port=config['pylontech_bms_port'],
-                          pack_number=config['us2000_pack_number'],
-                          baudrate=config['us2000_baudrate'],
-                          lifetime=30,
-                          log_name='bms')
+
+        if 'bms_us2000' in config:
+            self.bms = US2000(**self.config['bms_us2000'])  # pass config to BMS class
+        # elif 'bms_seplos' in config:
+        #     self.bms = SEPLOS(**self.config['bms_seplos'])  # pass config to BMS class
+        else:
+            self.log.exception("undefined BMS")
+            self.bms = None
+
         self.multiplus = MultiPlus2(config['victron_mk3_port'])
         self.blackbox = Blackbox(size=config['blackbox_size'],
                                  path=config['log_path'],
@@ -52,15 +58,12 @@ class App(FSM):
         self.home_all_p = 0
         self.car_p = 0
         self.pv_p = 0
-        self.soc = None
-        self.soc_low = None  # lowest SOC
-        self.soc_high = None  # highest SOC
-        self.ubat = None
 
         self.charge_start_timer = Timer()
         self.feed_start_timer = Timer()
         self.feed_throttle_timer = Timer()
         self.state_timer = Timer()
+
 
     def get_setting(self, name):
         """
@@ -85,12 +88,13 @@ class App(FSM):
             # === meterhub ===================================================   ~ 15ms
 
             self.meterhub.read(
-                post={'bat_info': self.get_info_text(), 'bat_soc': dictget(self.bms.data, 'soc')})
+                post={'bat_info': self.get_info_text(), 'bat_soc': self.bms.soc})
             self.log.debug("meterhub {}".format(self.meterhub.data))
 
             # === bms ===================================================   ~ 0ms (Thread)
 
-            self.log.debug("bms {}".format(self.bms.data))
+            self.bms.update()
+            self.log.debug("bms {}".format(self.bms.get_state()))
 
             # ================================================================
 
@@ -137,38 +141,23 @@ class App(FSM):
         else:
             self.home_p = None
 
-        self.soc = dictget(self.bms.data, 'soc')
 
-        try:
-            self.soc_low = min(self.bms.data['soc_pack'])
-            self.soc_high = max(self.bms.data['soc_pack'])
-        except:
-            self.soc_low = None
-            self.soc_high = None
-
-        self.ubat = dictget(self.bms.data, 'u')
 
     def fsm_switch(self):
         """
         Auto state change by events
         """
-        if dictget(self.bms.data, 'u', 0) > self.config['udc_max']:
-            self.log.error("error max voltage at bms {}".format(self.bms.data))
+        if self.bms.voltage and self.bms.voltage > self.config['udc_max']:
+            self.log.error("error max voltage at bms {}".format(self.bms.get_state()))
             self.set_fsm_state('error')
-        # elif dictget(self.multiplus.data, 'bat_u', 0) > self.config['udc_max']:
-        #     self.log.error("error max voltage at multiplus {}".format(self.multiplus.data))
-        #     self.set_fsm_state('error')
-        elif dictget(self.bms.data, 't', 0) > self.config['t_max']:
-            self.log.error("error max bms temperature {}".format(self.bms.data))
+        elif self.bms.temperature and self.bms.temperature > self.config['t_max']:
+            self.log.error("error max bms temperature {}".format(self.bms.get_state()))
             self.set_fsm_state('error')
         elif not self.is_meterhub_ready():
             self.log.error("meterhub error {}".format(self.meterhub.data))
             self.set_fsm_state('error')
-        elif not self.is_bms_ready():
-            self.log.error("bms not ready {}".format(self.bms.data))
-            self.set_fsm_state('error')
-        elif self.is_bms_error():
-            self.log.error("bms error {}".format(self.bms.data))
+        elif self.bms.error:
+            self.log.error("bms error {}".format(self.bms.get_state()))
             self.set_fsm_state('error')
         elif not self.is_multiplus_ready():
             self.log.error("multiplus error {}".format(self.multiplus.data))
@@ -192,7 +181,7 @@ class App(FSM):
         except:
             p = 0
 
-        if p < self.get_setting('charge_min_power') or self.soc_high > (
+        if p < self.get_setting('charge_min_power') or self.bms.soc_high is None or self.bms.soc_high > (
                 self.get_setting('charge_end_soc') - self.get_setting('charge_hysteresis_soc')):
             self.charge_start_timer.stop()
         else:
@@ -215,7 +204,7 @@ class App(FSM):
         except:
             p = 0
 
-        if p < self.get_setting('feed_min_power') or self.soc_low < (
+        if p < self.get_setting('feed_min_power') or self.bms.soc_low is None or self.bms.soc_low < (
                 self.get_setting('feed_end_soc') + self.get_setting('feed_hysteresis_soc')):
             self.feed_start_timer.stop()
         else:
@@ -225,12 +214,6 @@ class App(FSM):
                 # self.feed_start_timer.stop()
                 return True
         return False
-
-    def is_bms_error(self):
-        return True if self.bms.data['error'] else False
-
-    def is_bms_ready(self):
-        return self.bms.data['ready']
 
     def is_meterhub_ready(self):
         return True if self.meterhub.data and 'error' not in self.meterhub.data else False
@@ -247,16 +230,14 @@ class App(FSM):
             self.set_p = 0
             self.state_timer.start(10)
 
-        if self.is_meterhub_ready() and self.is_bms_ready() and self.is_multiplus_ready():
+        if self.is_meterhub_ready() and not self.bms.error and self.is_multiplus_ready():
             self.fsm_switch()
 
         if self.state_timer.is_expired():
             if not self.is_meterhub_ready():
                 self.log.error("meterhub error {}".format(self.meterhub.data))
-            if not self.is_bms_ready():
-                self.log.error("bms not ready {}".format(self.bms.data))
-            if self.is_bms_error():
-                self.log.error("bms error {}".format(self.bms.data))
+            if self.bms.error():
+                self.log.error("bms error {}".format(self.bms.get_state()))
             if not self.is_multiplus_ready():
                 self.log.error("multiplus error={}".format(self.multiplus.data))
             self.set_fsm_state('error')
@@ -323,10 +304,10 @@ class App(FSM):
             # ToDo Filter     schnell runter, langsam hoch
 
             charge_set_p = limit(p, 0, self.get_setting('charge_max_power'))  # limit to 0..max
-            if self.soc_high >= self.get_setting('charge_end_soc'):  # end by SOC
+            if self.bms.soc_high and self.bms.soc_high >= self.get_setting('charge_end_soc'):  # end by SOC
                 self.log.info("charge end by soc (config.charge_end_soc)")
                 self.set_fsm_state('auto_idle')
-            elif self.ubat >= self.get_setting('charge_end_voltage'):  # end by UDC
+            elif self.bms.voltage and self.bms.voltage >= self.get_setting('charge_end_voltage'):  # end by UDC
                 self.log.info("charge end by voltage (config.charge_end_voltage)")
                 self.set_fsm_state('auto_idle')
             else:
@@ -356,11 +337,10 @@ class App(FSM):
         try:
             p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
 
-            if self.soc_low <= 25:
+            if self.bms.soc_low and self.bms.soc_low <= 25:
                 max_p = self.get_setting('feed_soc25_max_power')
             else:
                 max_p = self.get_setting('feed_max_power')
-
 
             feed_set_p = limit(p, 0, max_p)  # limit to 0..max
 
@@ -387,10 +367,10 @@ class App(FSM):
                 feed_set_p = limit(p, 0, self.get_setting('feed_throttle_power'))
             # --------------------------------------------------------------------------------
 
-            if self.soc_low <= self.get_setting('feed_end_soc'):  # end by SOC
+            if self.bms.soc_low and self.bms.soc_low <= self.get_setting('feed_end_soc'):  # end by SOC
                 self.log.info("feed end by soc (config.feed_end_soc)")
                 self.set_fsm_state('auto_idle')
-            elif self.ubat <= self.get_setting('feed_end_voltage'):  # end by UDC
+            elif self.bms.voltage and self.bms.voltage <= self.get_setting('feed_end_voltage'):  # end by UDC
                 self.log.info("feed end by voltage (config.feed_end_voltage)")
                 self.set_fsm_state('auto_idle')
             else:
@@ -457,11 +437,11 @@ class App(FSM):
                 'info': self.get_info_text()
             },
             'meterhub': self.meterhub.data,
-            'bms': self.bms.data,
+            'bms': self.bms.get_state(),
             'multiplus': self.multiplus.data,
         }
         if bms_detail:
-            d['bms_detail'] = self.bms.data_detail
+            d['bms_detail'] = self.bms.get_detail()
         return d
 
     def get_info_text(self):

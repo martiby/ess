@@ -240,7 +240,7 @@
                         <th id="bms-title" style="border-radius: 5px" colspan="7">BMS</th>
                     </tr>
 
-                    % for i in bms_cfg:
+                    % for i in range(bms_pack_number):
                     <tr>
                         <td><strong>{{i+1}}</strong></td>
                         <td id="bms-soc{{i}}" class="bms-cell"></td>

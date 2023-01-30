@@ -1,9 +1,17 @@
 config = {
     'meterhub_address': 'http://192.168.0.10:8008',
     'victron_mk3_port': '/dev/serial/by-id/usb-VictronEnergy_MK3-USB_Interface_HQ2132VK4JK-if00-port0',
-    'pylontech_bms_port': "/dev/serial/by-path/platform-3f980000.usb-usb-0:1.3:1.0",  # Raspberry Home (rechts oben)
-    'us2000_pack_number': 2,  # number of Pylontech packs
-    'us2000_baudrate': 115200,  # Baudrate for Pylontech BMS
+
+    'bms_us2000': {
+        'port': "/dev/serial/by-path/platform-3f980000.usb-usb-0:1.3:1.0",  # Raspberry Home (rechts oben)
+        'pack_number': 2,  # number of Pylontech packs
+        'baudrate': 115200,  # Baudrate for Pylontech BMS
+    },
+
+    # 'bms_seplos': {
+    #     'port': "",
+    #     ...
+    # },
 
     'password': '1234',  # Password for web access
 
@@ -98,11 +106,11 @@ config = {
                     ('bat_ac_p', 'meterhub', 'bat_p'),
                     ('mp2_bat_u', 'multiplus', 'bat_u'),
                     ('mp2_bat_i', 'multiplus', 'bat_i'),
-                    ('bms_u0', 'bms', 'u_pack', 0),
-                    ('bms_u1', 'bms', 'u_pack', 1),
-                    ('bms_i0', 'bms', 'i_pack', 0),
-                    ('bms_i1', 'bms', 'i_pack', 1),
-                    ('bms_soc0', 'bms', 'soc_pack', 0),
-                    ('bms_soc1', 'bms', 'soc_pack', 1)]},
+                    ('bms_u0', 'bms', 'pack_u', 0),
+                    ('bms_u1', 'bms', 'pack_u', 1),
+                    ('bms_i0', 'bms', 'pack_i', 0),
+                    ('bms_i1', 'bms', 'pack_i', 1),
+                    ('bms_soc0', 'bms', 'pack_soc', 0),
+                    ('bms_soc1', 'bms', 'pack_soc', 1)]},
 
 }

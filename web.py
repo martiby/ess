@@ -80,11 +80,18 @@ class AppWeb:
 
             d = {
                 "version": __version__,
-                "bms_cfg": range(config['us2000_pack_number']),
+                "bms_pack_number": 1,
                 "enable_car": config['enable_car'],
                 "enable_heat": config['enable_heat'],
                 "setting": [s['name'] for s in config['setting']]
             }
+
+            try:
+                d["bms_pack_number"] = config['bms_us2000']['pack_number']
+            except:
+                pass
+
+
             return template('index.html', d)
             # return static_file('index.html', root=self.app.www_path)
         else:
@@ -178,7 +185,7 @@ class AppWeb:
         /api/state      Webserver interface to get full bms info as json
         """
         response.content_type = 'application/json'
-        return json.dumps(self.app.bms.data_detail)
+        return json.dumps(self.app.bms.get_detail())
 
     def web_debug_cmd(self, cmd):
         """
@@ -187,8 +194,6 @@ class AppWeb:
         if cmd == 'mp2online':
             s = "mp2online debug command"
             self.app.multiplus.online = True
-        elif cmd == 'bmsstats':
-            return self.app.bms.stats
         else:
             s = "unknown debug command: {}".format(cmd)
         self.log.info(s)

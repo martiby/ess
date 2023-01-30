@@ -289,18 +289,18 @@ app.show_detail_values = function (state) {
     set_val('mp2-mains-i', state?.multiplus?.mains_i, ' A', 1);
 
     // BMS / US2000
-    for (let n = 0; n < (state?.bms?.u_pack ?? []).length; n++) {
-        let u = state?.bms?.u_pack?.[n];
-        let i = state?.bms?.i_pack?.[n];
+    for (let n = 0; n < (state?.bms?.pack_u ?? []).length; n++) {
+        let u = state?.bms?.pack_u?.[n];
+        let i = state?.bms?.pack_i?.[n];
         let p = u === null || i === null ? null : u * i;
 
         try {
-            set_val('bms-soc' + n, state?.bms?.soc_pack?.[n], '%');
+            set_val('bms-soc' + n, state?.bms?.pack_soc?.[n], '%');
             set_val('bms-p' + n, p, 'W');
             set_val('bms-u' + n, u, 'V', 2);
             set_val('bms-i' + n, i, 'A', 1);
-            set_val('bms-t' + n, state?.bms?.t_pack?.[n], '°C');
-            set_val('bms-cycle' + n, state?.bms?.cycle_pack?.[n], 'x');
+            set_val('bms-t' + n, state?.bms?.pack_t?.[n], '°C');
+            set_val('bms-cycle' + n, state?.bms?.pack_cycle?.[n], 'x');
         } catch (e) {
         }
     }
