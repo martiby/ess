@@ -25,7 +25,7 @@ config = {
     'enable_car': True,  # Show car values on dashboard
     'enable_heat': False,  # Show heater values on dashboard
 
-    'udc_max': 53,  # maximum voltage (only checked at BMS, MP2 has peaks ?! ToDo !!!)
+    'udc_max': 54,  # maximum voltage (only checked at BMS, MP2 has peaks ?! ToDo !!!)
     't_max': 40,  # maximum temperature
 
     # The setting [0] is used as default, undefined values from other settings [1, ...] are used from the setting [0]
@@ -89,6 +89,22 @@ config = {
             'charge_reserve_power': 25,
             'charge_start_time': 10,
             'charge_stop_time': 5,
+            'feed_soc25_max_power': 750,
+            'feed_max_power': 1000,  # [W] Maximum feed power
+            'feed_reserve_power': 50,  # [W] "Distance" consumption to feed-in power
+            'feed_end_soc': 20,  # [%] SOC at which feed-in is terminated
+            'feed_hysteresis_soc': 10,  # [%] SOC restart hysteresis
+        },
+        {
+            'name': 'Full 100% Charge',
+            'charge_min_power': 200,
+            'charge_max_power': 500,
+            'charge_reserve_power': 50,
+            'charge_end_voltage': 53.75,  # [V] Voltage at which the charge is terminated
+            'charge_start_time': 10,
+            'charge_stop_time': 5,
+            'charge_end_soc': 105,  # [%] SOC at which charging is finished
+            'charge_hysteresis_soc': 2,  # [%] SOC restart hysteresis
             'feed_soc25_max_power': 750,
             'feed_max_power': 1000,  # [W] Maximum feed power
             'feed_reserve_power': 50,  # [W] "Distance" consumption to feed-in power
