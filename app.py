@@ -134,8 +134,8 @@ class App(FSM):
         self.pv_p = dictget(self.meterhub.data, 'pv_p')
         self.home_all_p = dictget(self.meterhub.data, 'home_all_p')
 
-        if self.home_all_p and self.car_p:
-            self.home_p = self.home_all_p - self.car_p
+        # if self.home_all_p and self.car_p:
+        #     self.home_p = self.home_all_p - self.car_p
         if self.home_all_p:
             self.home_p = self.home_all_p
         else:
