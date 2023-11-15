@@ -44,7 +44,7 @@ class AppWeb:
         logging.getLogger('waitress.queue').setLevel(logging.ERROR)  # hide waitress info log
         # start webserver thread
         threading.Thread(target=self.web.run, daemon=True,
-                         kwargs=dict(host='0.0.0.0', port=8888, server='waitress')).start()
+                         kwargs=dict(host='0.0.0.0', port=config['http_port'], server='waitress')).start()
 
     def web_login(self):
         """
