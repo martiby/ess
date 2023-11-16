@@ -15,7 +15,7 @@ config = {
 
     'password': '1234',  # Password for web access
 
-    'http_port': 8090,  # HTTP port of the webserver
+    'http_port': 8888,  # HTTP port of the webserver
     'www_path': "www",  # path for static webserver files
     'log_path': "log",  # log path
 
