@@ -78,12 +78,12 @@ def parse_analog_value(frame):
     temp = struct.unpack_from(">HHHHH", frame, p + 32)
     d['t'] = [(t - 2731) / 10 for t in temp]
     # Ampere, positive (charge), negative (discharge), with 100mA steps
-    current, voltage, q1, id, q1_total, d['cycle'] = struct.unpack_from(">hHHbHH", frame, p + 42 + config['batt_type'])
+    current, voltage, q1, id, q1_total, d['cycle'] = struct.unpack_from(">hHHbHH", frame, p + 42 + self.config['batt_type'])
     d['i'] = current / 10
     d['u'] = voltage / 1000
 
     if id == 4:   # US3000 and US5000
-        p = p + 42 + config['batt_type'] + 11
+        p = p + 42 + self.config['batt_type'] + 11
         d['q'] = struct.unpack(">I", b'\x00' + frame[p:p+3])[0]
         p += 3
         d['q_total'] = struct.unpack(">I", b'\x00' + frame[p:p + 3])[0]
