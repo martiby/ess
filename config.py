@@ -8,6 +8,8 @@ config = {
         'baudrate': 115200,  # Baudrate for Pylontech BMS
     },
 
+    'batt_type': 2,    # 0..Pylontech US2000/3000, 2..Pylontech US5000
+
     # 'bms_seplos': {
     #     'port': "",
     #     ...
