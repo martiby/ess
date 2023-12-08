@@ -9,9 +9,9 @@ Packet and Framehandling. See demo_pylontech.py for a simple example.
 30.11.2022  Martin Steppuhn     Split in pylontech.py (basic packets) and us2000.py (threaded service class)   
 31.12.2022  Martin Steppuhn     US3000 Quickhack
 """
-if config['batt_type'] == 42:
+if config['batt_type'] == 0:
     type = 42
-if config['batt_type'] == 44:
+if config['batt_type'] == 1:
     type = 44
 
 def read_analog_value(com, address):
