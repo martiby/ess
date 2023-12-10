@@ -9,12 +9,9 @@ Packet and Framehandling. See demo_pylontech.py for a simple example.
 30.11.2022  Martin Steppuhn     Split in pylontech.py (basic packets) and us2000.py (threaded service class)   
 31.12.2022  Martin Steppuhn     US3000 Quickhack
 """
-if config['batt_type'] == 0:
-    type = 42
-if config['batt_type'] == 1:
-    type = 44
 
-def read_analog_value(com, address):
+
+def read_analog_value(com, address, type='US2000'):
     """
     Read analog value (MAIN INFORMATION)
 
@@ -41,12 +38,12 @@ def read_analog_value(com, address):
     # print("RX:", rx)
     frame = decode_frame(rx)
     if frame is not None:
-        return parse_analog_value(frame)
+        return parse_analog_value(frame, type)
     else:
         raise ValueError('receive failed dump={}'.format(rx))
 
 
-def parse_analog_value(frame):
+def parse_analog_value(frame, type):
     """
     Parser for analog value packet
 
@@ -74,6 +71,12 @@ def parse_analog_value(frame):
     :param frame: bytes
     :return: dictionary
     """
+
+    if type == 'US5000':
+        offs = 44
+    else:
+        offs = 42   # US2000 / US3000
+
     d = {}
     p = 8
     cell_number = frame[p]  # US2000 = 15 Zellen
@@ -82,12 +85,12 @@ def parse_analog_value(frame):
     temp = struct.unpack_from(">HHHHH", frame, p + 32)
     d['t'] = [(t - 2731) / 10 for t in temp]
     # Ampere, positive (charge), negative (discharge), with 100mA steps
-    current, voltage, q1, id, q1_total, d['cycle'] = struct.unpack_from(">hHHbHH", frame, p + type)
+    current, voltage, q1, id, q1_total, d['cycle'] = struct.unpack_from(">hHHbHH", frame, p + offs)
     d['i'] = current / 10
     d['u'] = voltage / 1000
 
     if id == 4:   # US3000 and US5000
-        p = p + type + 11
+        p = p + offs + 11
         d['q'] = struct.unpack(">I", b'\x00' + frame[p:p+3])[0]
         p += 3
         d['q_total'] = struct.unpack(">I", b'\x00' + frame[p:p + 3])[0]

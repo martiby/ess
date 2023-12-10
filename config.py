@@ -2,13 +2,12 @@ config = {
     'meterhub_address': 'http://192.168.0.10:8008',
     'victron_mk3_port': '/dev/serial/by-id/usb-VictronEnergy_MK3-USB_Interface_HQ2132VK4JK-if00-port0',
 
+    # use 'bms_us2000' for US2000 or US3000 and 'bms_us5000' for US5000
     'bms_us2000': {
         'port': "/dev/serial/by-path/platform-3f980000.usb-usb-0:1.3:1.0",  # Raspberry Home (rechts oben)
         'pack_number': 2,  # number of Pylontech packs
         'baudrate': 115200,  # Baudrate for Pylontech BMS
     },
-
-    'batt_type': 0,    # 0..Pylontech US2000/3000, 1..Pylontech US5000
 
     # 'bms_seplos': {
     #     'port': "",

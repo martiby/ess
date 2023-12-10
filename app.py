@@ -34,6 +34,8 @@ class App(FSM):
 
         if 'bms_us2000' in config:
             self.bms = US2000(**self.config['bms_us2000'])  # pass config to BMS class
+        elif 'bms_us5000' in config:
+            self.bms = US2000(**self.config['bms_us5000'], type="US5000")  # pass config to BMS class
         # elif 'bms_seplos' in config:
         #     self.bms = SEPLOS(**self.config['bms_seplos'])  # pass config to BMS class
         else:

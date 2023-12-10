@@ -9,7 +9,7 @@ import serial  # pip install pyserial
 
 class US2000(BMS):
 
-    def __init__(self, port=None, baudrate=115200, pack_number=1, lifetime=20, log_name='us2000', pause=0.25):
+    def __init__(self, port=None, baudrate=115200, pack_number=1, lifetime=20, log_name='us2000', pause=0.25, type='US2000'):
         """
         Service class with polling thread
 
@@ -24,6 +24,7 @@ class US2000(BMS):
         self.port = port
         self.baudrate = baudrate  # save baudrate
         self.pack_number = pack_number  # number of devices
+        self.type = type   # 'US5000'   default 'US2000' or 'US3000'
         self.pause = pause
         self.lifetime = lifetime
         self.log = logging.getLogger(log_name)
@@ -90,7 +91,7 @@ class US2000(BMS):
 
             for i in range(self.pack_number):
                 try:
-                    d = read_analog_value(self.com, i)
+                    d = read_analog_value(self.com, i, self.type)
                     self.log.debug("read_analog_value[{}] {}".format(i, d))
                     self.data['analog'][i] = d
                     self.data['analog'][i]['time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
