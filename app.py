@@ -60,6 +60,7 @@ class App(FSM):
         self.home_all_p = 0
         self.car_p = 0
         self.pv_p = 0
+        self.bat_p = 0
 
         self.charge_start_timer = Timer()
         self.feed_start_timer = Timer()
@@ -133,8 +134,12 @@ class App(FSM):
         """
         self.grid_p = dictget(self.meterhub.data, 'grid_p')
         self.car_p = dictget(self.meterhub.data, 'car_p')
-        self.pv_p = dictget(self.meterhub.data, 'pv_p')
+        # self.pv_p = dictget(self.meterhub.data, 'pv_p')
         self.home_all_p = dictget(self.meterhub.data, 'home_all_p')
+
+        self.bat_p = dictget(self.meterhub.data, 'bat_p')
+
+
 
         # if self.home_all_p and self.car_p:
         #     self.home_p = self.home_all_p - self.car_p
@@ -179,7 +184,10 @@ class App(FSM):
         :return: bool
         """
         try:
-            p = self.pv_p - self.home_all_p - self.get_setting('charge_reserve_power')
+            # p = self.pv_p - self.home_all_p - self.get_setting('charge_reserve_power')
+
+            p = -self.grid_p + self.bat_p - self.get_setting('charge_reserve_power')
+
         except:
             p = 0
 
@@ -202,7 +210,11 @@ class App(FSM):
         """
 
         try:
-            p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
+            # p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
+
+            # p = self.grid_p - self.bat_p - self.car_p - self.get_setting('feed_reserve_power')
+            p = self.grid_p - self.bat_p - self.get_setting('feed_reserve_power')
+
         except:
             p = 0
 
@@ -300,7 +312,9 @@ class App(FSM):
         if entry:
             self.log.info("AUTO-CHARGE")
         try:
-            p = self.pv_p - self.home_all_p - self.get_setting('charge_reserve_power')
+            # p = self.pv_p - self.home_all_p - self.get_setting('charge_reserve_power')
+
+            p = -self.grid_p + self.bat_p - self.get_setting('charge_reserve_power')
 
             # print("p={} pv={} home_all={} home={} car={}".format(p, self.pv_p, self.home_all_p, self.home_p, self.car_p) )
             # ToDo Filter     schnell runter, langsam hoch
@@ -337,7 +351,12 @@ class App(FSM):
             self.log.info("AUTO-FEED")
 
         try:
-            p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
+            # p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
+
+            # p = self.grid_p - self.bat_p - self.car_p - self.get_setting('feed_reserve_power')
+
+            p = self.grid_p - self.bat_p - self.get_setting('feed_reserve_power')
+
 
             if self.bms.soc_low and self.bms.soc_low <= 25:
                 max_p = self.get_setting('feed_soc25_max_power')
