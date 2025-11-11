@@ -295,6 +295,13 @@ class App(FSM):
                 self.set_fsm_state('auto_feed')
             elif self.is_charge_start():
                 self.set_fsm_state('auto_charge')
+            
+            # Night charge
+            if (self.get_setting('charge_night_end_soc') > 0) and (self.bms.soc < self.get_setting('charge_night_end_soc')):
+                if (int(time.strftime("%H")) == 1) and (int(time.strftime("%M")) == 0):
+                     self.set_fsm_state('auto_night_charge')
+                     if mp2_state=='sleep':
+                          self.multiplus.wakeup()                
 
             if self.state_timer.is_expired() and mp2_state != 'sleep':
                 self.state_timer.start(5)  # resend
@@ -304,7 +311,27 @@ class App(FSM):
         except Exception as e:
             self.log.error("[auto_idle] exception {}".format(e))
             self.set_fsm_state('error')
+            
+    # ==================================================================================================================
+    #   AUTO_NIGHT_CHARGE
+    # ==================================================================================================================
 
+    def fsm_auto_night_charge(self, entry):
+
+        if entry:
+            self.log.info("AUTO-NIGHT-CHARGE")
+
+        try:
+            if (self.bms.soc == self.get_setting('charge_night_end_soc')) or ((int(time.strftime("%H")) == 4) and (int(time.strftime("%M")) == 0)):
+                self.set_p = 0
+                self.set_fsm_state('auto_idle')
+
+            self.set_p = 2000                 # charge max Power of Multiplus II 48/3000
+
+        except Exception as e:
+            self.log.error("[auto_night_charge] exception {}".format(e))
+            self.set_fsm_state('error')
+            
     # ==================================================================================================================
     #   AUTO_CHARGE
     # ==================================================================================================================
@@ -407,6 +434,13 @@ class App(FSM):
                         self.set_fsm_state('auto_idle')
 
             self.set_p = -feed_set_p
+
+            # Night charge
+            if (self.get_setting('charge_night_end_soc') > 0) and (self.bms.soc < self.get_setting('charge_night_end_soc')):
+                if (int(time.strftime("%H")) == 1) and (int(time.strftime("%M")) == 0):
+                    self.set_p = 0
+                    self.set_fsm_state('auto_night_charge')
+                    
         except Exception as e:
             self.log.error("[auto_feed] exception {}".format(e))
             self.set_fsm_state('error')
@@ -487,6 +521,8 @@ class App(FSM):
                 s = "Automatik - Laden"
             elif self._fsm_state == 'auto_feed' and mp2_state == 'on':
                 s = "Automatik - Einspeisen"
+            elif self._fsm_state == 'auto_night_charge' and mp2_state == 'on':
+                s = "Automatik - Nachtladen"
             elif mp2_state == 'wait':
                 s = "Automatik - Warten"
             return s

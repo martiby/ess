@@ -57,7 +57,12 @@ config = {
             'feed_throttle_power': 1500,  # [W] Performance limit with throttling
 
             'idle_sleep_time': 10 * 60,  # [s] Sleeptimer, (idle --> sleep) Multiplus
+            
+            'charge_night_end_soc': 0,   # [%] SOC to reach in night charge            
         },
+        {
+            'name': 'Standard + Nacht laden',
+            'charge_night_end_soc': 80,   # [%] SOC to reach in night charge            
         {
             'name': 'Maximal-Entladen (Sommer)',
             'feed_max_power': 2400,
