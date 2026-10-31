@@ -103,7 +103,7 @@ class MultiPlus2:
                         data.update(part1)
                         data.update(part2)
                         data.update(part3)
-                        led = data.get('led_light', 0) + data.get('led_blink', 0)
+                        led = data.get('led_light', 0) | data.get('led_blink', 0)  # bitwise OR, blinking LED may be set in both bytes
                         state = data.get('device_state_id', None)
                         if state == 2:
                             data['state'] = 'sleep'

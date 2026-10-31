@@ -203,12 +203,12 @@ app.show_dashboard_state = function (state) {
     // === PFlow ===
     let d = {
         pv: {
-            power: state?.meterhub?.pv_p,
-            subline: 'Süd: ' + (state?.meterhub?.pv1_p ?? '---') + ' W  Nord: ' + (state?.meterhub?.pv2_p ?? '---') + ' W',
+            power: state?.meterhub?.pv_p   //,
+            //subline: 'Süd: ' + (state?.meterhub?.pv1_p ?? '---') + ' W  Nord: ' + (state?.meterhub?.pv2_p ?? '---') + ' W',
         },
         home: {power: state?.meterhub?.home_p},
         bat: {
-            power: state?.meterhub?.bat_p,
+            power: state?.multiplus?.bat_p,
             error: state?.ess?.state === 'error',
             info: (state?.bms?.soc) ? state.bms.soc + ' %' : '-- %',
             subline: state?.ess?.info
@@ -275,7 +275,7 @@ app.show_detail_values = function (state) {
     set_val('meter-pv-p', state?.meterhub?.pv_p, ' W');
     set_val('meter-grid-p', state?.meterhub?.grid_p, ' W');
     set_val('meter-home-p', state?.meterhub?.home_p, ' W');
-    set_val('meter-bat-p', state?.meterhub?.bat_p, ' W');
+    //set_val('meter-bat-p', state?.meterhub?.bat_p, ' W');
     if(config_enable_car) set_val('meter-car-p', state?.meterhub?.car_p, ' W');
     if(config_enable_heat) set_val('meter-heat-p', state?.meterhub?.heat_p, ' W');
 

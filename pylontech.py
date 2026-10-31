@@ -10,8 +10,12 @@ Packet and Framehandling. See demo_pylontech.py for a simple example.
 31.12.2022  Martin Steppuhn     US3000 Quickhack
 """
 
+if config['batt_type'] == 42:
+    type = 42
+if config['batt_type'] == 44:
+    type = 44
 
-def read_analog_value(com, address, type='US2000'):
+def read_analog_value(com, address):
     """
     Read analog value (MAIN INFORMATION)
 
@@ -30,20 +34,20 @@ def read_analog_value(com, address, type='US2000'):
     :return: Dictionary with values
     """
     tx = encode_cmd(address + 2, 0x42, "{:02X}".format(address + 2).encode('utf-8'))
-    # print("TX:", tx)
+    #print("TX:", tx)
     com.reset_input_buffer()
     com.write(tx)
 
     rx = com.read_until(b'\r')
-    # print("RX:", rx)
+    #print("RX:", rx)
     frame = decode_frame(rx)
     if frame is not None:
-        return parse_analog_value(frame, type)
+        return parse_analog_value(frame)
     else:
         raise ValueError('receive failed dump={}'.format(rx))
 
 
-def parse_analog_value(frame, type):
+def parse_analog_value(frame):
     """
     Parser for analog value packet
 
@@ -71,12 +75,6 @@ def parse_analog_value(frame, type):
     :param frame: bytes
     :return: dictionary
     """
-
-    if type == 'US5000':
-        offs = 44
-    else:
-        offs = 42   # US2000 / US3000
-
     d = {}
     p = 8
     cell_number = frame[p]  # US2000 = 15 Zellen
@@ -85,12 +83,12 @@ def parse_analog_value(frame, type):
     temp = struct.unpack_from(">HHHHH", frame, p + 32)
     d['t'] = [(t - 2731) / 10 for t in temp]
     # Ampere, positive (charge), negative (discharge), with 100mA steps
-    current, voltage, q1, id, q1_total, d['cycle'] = struct.unpack_from(">hHHbHH", frame, p + offs)
+    current, voltage, q1, id, q1_total, d['cycle'] = struct.unpack_from(">hHHbHH", frame, p + type)   #p+42 war Standard
     d['i'] = current / 10
     d['u'] = voltage / 1000
 
-    if id == 4:   # US3000 and US5000
-        p = p + offs + 11
+    if id == 4:   # id ==4 für US3000/5000
+        p = p + type + 11
         d['q'] = struct.unpack(">I", b'\x00' + frame[p:p+3])[0]
         p += 3
         d['q_total'] = struct.unpack(">I", b'\x00' + frame[p:p + 3])[0]
@@ -305,3 +303,10 @@ def decode_frame(raw_frame):
             frame = bytes.fromhex(raw_frame[1:-1].decode("utf-8"))  # hex --> bytes
             return frame
     return None
+
+
+
+
+
+
+

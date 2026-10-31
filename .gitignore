@@ -4,3 +4,4 @@ __pycache__
 /release/
 /www/lib/chart.js-3.8.0/
 /debug/
+/config_secret.py

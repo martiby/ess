@@ -3,7 +3,7 @@ import serial
 from pylontech import *
 
 # port = '/dev/ttyACM0'
-port = "/dev/serial/by-path/platform-3f980000.usb-usb-0:1.3:1.0"  # Raspberry Home (rechts oben)
+port = "/dev/serial/by-id/usb-1a86_USB_Single_Serial_556F023975-if00"  # Raspberry Home (rechts oben)
 
 pack_number = 2
 

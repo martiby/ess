@@ -8,6 +8,7 @@ from api_request import ApiRequest
 from blackbox import Blackbox
 from config import config
 from fsm import FSM
+from ha_report import HaReport
 from multiplus2 import MultiPlus2
 from timer import Timer
 from trace import Trace
@@ -15,14 +16,16 @@ from bms_us2000 import US2000
 from utils import *
 from web import AppWeb
 
-from bms_dummy import BMS_DUMMY
+# from bms_dummy import BMS_DUMMY
 
 """
 ESS Application
 """
 
-
 class App(FSM):
+    MAX_ERROR_ACKS_PER_DAY = 3
+    ERROR_ACK_INTERVAL = 10
+
     def __init__(self):
         super().__init__('init')
         self.www_path = config['www_path']
@@ -30,12 +33,15 @@ class App(FSM):
         self.web = AppWeb(self)
         self.trace = Trace()
         self.config = config
+        self.cycle_time = config.get('cycle_time', 0.75)  # [s] mainloop cycle time
+        self.gain = config.get('regulator_gain', 0.12)  # regulator gain, power up (more charge / feed)
+        self.gain_down = config.get('regulator_gain_down', self.gain)  # regulator gain, power down (faster)
+        self.feed_target = config.get('feed_grid_target', (-5, 0))  # [W] (min, max) grid power target while feeding
         self.meterhub = ApiRequest(config['meterhub_address'], timeout=0.5, lifetime=10, log_name='meterhub')
+        self.ha = HaReport(config.get('ha_webhook_url'), interval=10, timeout=1)  # Home Assistant, own thread
 
         if 'bms_us2000' in config:
             self.bms = US2000(**self.config['bms_us2000'])  # pass config to BMS class
-        elif 'bms_us5000' in config:
-            self.bms = US2000(**self.config['bms_us5000'], type="US5000")  # pass config to BMS class
         # elif 'bms_seplos' in config:
         #     self.bms = SEPLOS(**self.config['bms_seplos'])  # pass config to BMS class
         else:
@@ -47,12 +53,16 @@ class App(FSM):
                                  path=config['log_path'],
                                  csv_config=config.get('csv_log', None))
 
-        self.mode = 'off'  # Operation mode: 'off', 'auto', 'manual'
+        self.mode = 'auto'  # Operation mode: 'off', 'auto', 'manual'
         self.set_p = 0  # power set value
+        self.reg_p = 0  # regulator power for auto_charge / auto_feed, reset at state entry
         self.setting = 0  # 0, 1, ... Index to usersettings from config/ui
 
         self.ui_command = None  # commands from UI sent with polling, manual commands
         self.feed_throttle = False  # limit max feed at high continous feed
+        self.error_ack_count = 0
+        self.error_ack_date = datetime.now().date()
+        self.error_ack_timer = Timer()
 
         # values from MeterHub and BMS
         self.grid_p = 0
@@ -60,11 +70,13 @@ class App(FSM):
         self.home_all_p = 0
         self.car_p = 0
         self.pv_p = 0
+        self.meter_online = True  # smartmeter values (home_p) available
 
         self.charge_start_timer = Timer()
         self.feed_start_timer = Timer()
         self.feed_throttle_timer = Timer()
         self.state_timer = Timer()
+        self.mp2_wait_timer = Timer()  # max wait for multiplus 'on' in auto_charge / auto_feed
 
 
     def get_setting(self, name):
@@ -78,6 +90,13 @@ class App(FSM):
         else:
             return self.config['setting'][0][name]  # default or fallback to default
 
+    def reset_daily_error_ack_count(self):
+        today = datetime.now().date()
+        if today != self.error_ack_date:
+            self.error_ack_count = 0
+            self.error_ack_date = today
+            self.log.info("daily automatic error reset count cleared")
+
     def start(self):
         """
         Application mainloop
@@ -86,6 +105,7 @@ class App(FSM):
 
         while True:
             t_begin = time.perf_counter()  # cycle start time
+            self.reset_daily_error_ack_count()
 
             # === meterhub ===================================================   ~ 15ms
 
@@ -120,12 +140,23 @@ class App(FSM):
             # ================================================================
 
             t_end = time.perf_counter()
-            while time.perf_counter() < t_begin + 0.75:
+            while time.perf_counter() < t_begin + self.cycle_time:
                 time.sleep(0.01)
 
-            # typical ~ 680ms (synced to 750ms)
+            # typical ~ 680ms (synced to cycle_time)
 
             # print("loop {:.3f}s/{:.3f}s ".format(t_end - t_begin, time.perf_counter() - t_begin))
+
+            # =================================================================
+            # === Update Battery SOC and power to HA ==========================
+            try:
+                power = int(self.multiplus.data['inv_p'] or 0) * -1
+            except:
+                power = 0
+            self.ha.update(int(self.bms.soc or 0), power)  # non blocking, sent by HaReport thread
+
+            # =================================================================
+
 
     def update_in(self):
         """
@@ -137,12 +168,18 @@ class App(FSM):
         self.home_all_p = dictget(self.meterhub.data, 'home_all_p')
 
         # if self.home_all_p and self.car_p:
-        #     self.home_p = self.home_all_p - self.car_p
-        if self.home_all_p:
+        #    self.home_p = self.home_all_p - self.car_p
+        if self.home_all_p is not None:
             self.home_p = self.home_all_p
         else:
             self.home_p = None
 
+        if self.home_p is None and self.meter_online:
+            self.meter_online = False
+            self.log.warning("smartmeter data missing, no auto charge/feed")
+        elif self.home_p is not None and not self.meter_online:
+            self.meter_online = True
+            self.log.info("smartmeter data available again")
 
 
     def fsm_switch(self):
@@ -178,8 +215,11 @@ class App(FSM):
 
         :return: bool
         """
+        if self.home_p is None:  # no smartmeter data
+            self.charge_start_timer.stop()
+            return False
         try:
-            p = self.pv_p - self.home_all_p - self.get_setting('charge_reserve_power')
+            p = (self.home_p * -1) + self.get_setting('charge_reserve_power')
         except:
             p = 0
 
@@ -200,11 +240,22 @@ class App(FSM):
 
         :return: bool
         """
+        if self.home_p is None:  # no smartmeter data
+            self.feed_start_timer.stop()
+            return False
+        if self.home_p > 0:
+            self.hausverbrauch = self.home_p
+        else:
+            self.hausverbrauch = 0
 
         try:
-            p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
+            p =  self.hausverbrauch - self.get_setting('feed_reserve_power')
         except:
             p = 0
+
+        # Keine Einspeisung bei mehr als 2kW PV Leistung
+        #if self.pv_p > 2000:
+        #   p = 0
 
         if p < self.get_setting('feed_min_power') or self.bms.soc_low is None or self.bms.soc_low < (
                 self.get_setting('feed_end_soc') + self.get_setting('feed_hysteresis_soc')):
@@ -223,6 +274,35 @@ class App(FSM):
     def is_multiplus_ready(self):
         return True if self.multiplus.data and 'error' not in self.multiplus.data else False
 
+    def is_multiplus_on(self):
+        """
+        Multiplus is running and executes power commands (not sleep, wait after wakeup, init or offline)
+        """
+        return dictget(self.multiplus.data, 'state') not in (None, 'sleep', 'wait', 'init', 'offline')
+
+    def is_multiplus_hold(self, name):
+        """
+        Hold regulation in auto_charge / auto_feed until multiplus is on. Go to idle after 30s.
+
+        :param name: 'charge' or 'feed' for log
+        :return: True if regulation must be skipped
+        """
+        if self.is_multiplus_on():
+            if self.mp2_wait_timer.is_run():
+                self.mp2_wait_timer.stop()
+                self.log.info("{} start, multiplus on".format(name))
+            return False
+        if self.mp2_wait_timer.is_stop():
+            self.mp2_wait_timer.start(30)
+            self.log.info("{} hold, wait for multiplus on, state={}".format(name, dictget(self.multiplus.data, 'state')))
+        elif self.mp2_wait_timer.is_expired():
+            self.mp2_wait_timer.stop()
+            self.log.warning("{} end, multiplus not on after 30s, state={}".format(name, dictget(self.multiplus.data, 'state')))
+            self.set_fsm_state('auto_idle')
+        self.set_p = 0
+        self.state_timer.stop()  # no end by low power while waiting
+        return True
+
     # ==================================================================================================================
     #   INIT
     # ==================================================================================================================
@@ -238,7 +318,7 @@ class App(FSM):
         if self.state_timer.is_expired():
             if not self.is_meterhub_ready():
                 self.log.error("meterhub error {}".format(self.meterhub.data))
-            if self.bms.error():
+            if self.bms.error:
                 self.log.error("bms error {}".format(self.bms.get_state()))
             if not self.is_multiplus_ready():
                 self.log.error("multiplus error={}".format(self.multiplus.data))
@@ -252,6 +332,20 @@ class App(FSM):
             self.log.info("FSM: ERROR")
             self.blackbox.dump()  # save blockbox data to file
             self.set_p = 0
+            if self.error_ack_count < self.MAX_ERROR_ACKS_PER_DAY:
+                self.error_ack_timer.start(self.ERROR_ACK_INTERVAL)
+            else:
+                self.log.warning("daily automatic error reset limit reached")
+
+        if self.error_ack_count < self.MAX_ERROR_ACKS_PER_DAY:
+            if self.error_ack_timer.is_stop():
+                self.error_ack_timer.start(self.ERROR_ACK_INTERVAL)
+            elif self.error_ack_timer.is_expired():
+                self.error_ack_count += 1
+                self.error_ack_timer.stop()
+                self.log.warning("automatic error reset {}/{}".format(
+                    self.error_ack_count, self.MAX_ERROR_ACKS_PER_DAY))
+                self.set_fsm_state('init')
 
     # ==================================================================================================================
     #   OFF
@@ -279,17 +373,18 @@ class App(FSM):
                 self.state_timer.start(self.get_setting('idle_sleep_time'))
                 self.multiplus.wakeup()
 
-            if self.is_feed_start():
-                self.set_fsm_state('auto_feed')
-            elif self.is_charge_start():
-                self.set_fsm_state('auto_charge')
-            
+            if self.is_multiplus_on():  # regulation only when multiplus is on (not sleep / wait after wakeup)
+                if self.is_feed_start():
+                    self.set_fsm_state('auto_feed')
+                elif self.is_charge_start():
+                    self.set_fsm_state('auto_charge')
+
             # Night charge
             if (self.get_setting('charge_night_end_soc') > 0) and (self.bms.soc < self.get_setting('charge_night_end_soc')):
                 if (int(time.strftime("%H")) == 1) and (int(time.strftime("%M")) == 0):
                      self.set_fsm_state('auto_night_charge')
                      if mp2_state=='sleep':
-                          self.multiplus.wakeup()                
+                          self.multiplus.wakeup()
 
             if self.state_timer.is_expired() and mp2_state != 'sleep':
                 self.state_timer.start(5)  # resend
@@ -299,7 +394,7 @@ class App(FSM):
         except Exception as e:
             self.log.error("[auto_idle] exception {}".format(e))
             self.set_fsm_state('error')
-            
+
     # ==================================================================================================================
     #   AUTO_NIGHT_CHARGE
     # ==================================================================================================================
@@ -310,29 +405,70 @@ class App(FSM):
             self.log.info("AUTO-NIGHT-CHARGE")
 
         try:
-            if (self.bms.soc == self.get_setting('charge_night_end_soc')) or ((int(time.strftime("%H")) == 4) and (int(time.strftime("%M")) == 0)):
+            if self.bms.soc >= self.get_setting('charge_night_end_soc'):  # end by night soc
+                self.log.info("night charge end by soc (config.charge_night_end_soc)")
                 self.set_p = 0
                 self.set_fsm_state('auto_idle')
-
-            self.set_p = 2000                 # charge max Power of Multiplus II 48/3000
+            elif self.bms.soc_high and self.bms.soc_high >= self.get_setting('charge_end_soc'):  # end by SOC
+                self.log.info("night charge end by soc (config.charge_end_soc)")
+                self.set_p = 0
+                self.set_fsm_state('auto_idle')
+            elif self.bms.voltage and self.bms.voltage >= self.get_setting('charge_end_voltage'):  # end by UDC
+                self.log.info("night charge end by voltage (config.charge_end_voltage)")
+                self.set_p = 0
+                self.set_fsm_state('auto_idle')
+            elif int(time.strftime("%H")) >= 4:  # end by time, night charge starts at 01:00
+                self.log.info("night charge end by time")
+                self.set_p = 0
+                self.set_fsm_state('auto_idle')
+            else:
+                self.set_p = self.get_setting('charge_max_power')
 
         except Exception as e:
             self.log.error("[auto_night_charge] exception {}".format(e))
             self.set_fsm_state('error')
-            
+
+
     # ==================================================================================================================
     #   AUTO_CHARGE
     # ==================================================================================================================
     def fsm_auto_charge(self, entry):
         if entry:
             self.log.info("AUTO-CHARGE")
-        try:
-            p = self.pv_p - self.home_all_p - self.get_setting('charge_reserve_power')
+            self.reg_p = 10
+            self.mp2_wait_timer.stop()
 
-            # print("p={} pv={} home_all={} home={} car={}".format(p, self.pv_p, self.home_all_p, self.home_p, self.car_p) )
+        if self.home_p is None:  # smartmeter (AMIS) missing -> idle
+            self.log.warning("charge end, smartmeter data missing")
+            self.set_p = 0
+            self.set_fsm_state('auto_idle')
+            return
+
+        if self.is_multiplus_hold('charge'):  # multiplus not on (e.g. wait after wakeup), no regulation
+            return
+
+        try:
+            #p = self.pv_p - self.get_setting('charge_reserve_power')
+            if self.home_p > -30 and self.home_p < 0:  # deadband, target 0 W at grid meter
+                self.reg_p = self.reg_p
+            elif self.home_p < -30:  # grid export -> charge more
+                self.reg_p = self.reg_p + round(-self.home_p * self.gain)
+            elif self.home_p > 0:  # grid import -> charge less (fast down)
+                self.reg_p = self.reg_p - round(self.home_p * self.gain_down)
+
+            if self.reg_p > self.get_setting('charge_max_power'):
+                self.reg_p = self.get_setting('charge_max_power')
+            if self.reg_p < 0:
+                self.reg_p = 0
+            if self.bms.soc >= 95 and self.reg_p > 500:
+                self.reg_p = 500
+            if self.bms.soc >= 97 and self.reg_p > 300:
+                self.reg_p = 300
+
+            #print("p={} pv={} home_all={} home={} car={}".format(p, self.pv_p, self.home_all_p, self.home_p, self.car_p) )
             # ToDo Filter     schnell runter, langsam hoch
 
-            charge_set_p = limit(p, 0, self.get_setting('charge_max_power'))  # limit to 0..max
+            charge_set_p = limit(self.reg_p, 0, self.get_setting('charge_max_power'))  # limit to 0..max
             if self.bms.soc_high and self.bms.soc_high >= self.get_setting('charge_end_soc'):  # end by SOC
                 self.log.info("charge end by soc (config.charge_end_soc)")
                 self.set_fsm_state('auto_idle')
@@ -362,16 +498,40 @@ class App(FSM):
     def fsm_auto_feed(self, entry):
         if entry:
             self.log.info("AUTO-FEED")
+            self.reg_p = 10
+            self.mp2_wait_timer.stop()
+
+        if self.home_p is None:  # smartmeter (AMIS) missing -> idle
+            self.log.warning("feed end, smartmeter data missing")
+            self.set_p = 0
+            self.set_fsm_state('auto_idle')
+            return
+
+        if self.is_multiplus_hold('feed'):  # multiplus not on (e.g. wait after wakeup), no regulation
+            return
 
         try:
-            p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
+            #p = self.home_p - self.pv_p - self.get_setting('feed_reserve_power')
+            t_min, t_max = self.feed_target  # target: small grid import, no battery power to grid
+            feed_err = self.home_p - (t_min + t_max) / 2
+            if t_min <= self.home_p <= t_max:  # deadband, inside target range
+                self.reg_p = self.reg_p
+            elif feed_err > 0:  # grid import above target -> feed more
+                self.reg_p = self.reg_p + round(feed_err * self.gain)
+            else:  # below target / grid export -> feed less (fast down)
+                self.reg_p = self.reg_p + round(feed_err * self.gain_down)
 
-            if self.bms.soc_low and self.bms.soc_low <= 25:
+            if self.reg_p > self.get_setting('feed_max_power'):
+                self.reg_p = self.get_setting('feed_max_power')
+            if self.reg_p < 0:
+                self.reg_p = 0  # no integrator windup at grid export
+
+            if self.bms.soc < 25:
                 max_p = self.get_setting('feed_soc25_max_power')
             else:
                 max_p = self.get_setting('feed_max_power')
 
-            feed_set_p = limit(p, 0, max_p)  # limit to 0..max
+            feed_set_p = limit(self.reg_p, 0, max_p)  # limit to 0..max
 
             # ------ throttle --------------
             if not self.feed_throttle:
@@ -393,7 +553,7 @@ class App(FSM):
                     self.feed_throttle = False
                     self.log.info("feed throttle disabled")
 
-                feed_set_p = limit(p, 0, self.get_setting('feed_throttle_power'))
+                feed_set_p = limit(self.reg_p, 0, self.get_setting('feed_throttle_power'))
             # --------------------------------------------------------------------------------
 
             if self.bms.soc_low and self.bms.soc_low <= self.get_setting('feed_end_soc'):  # end by SOC
@@ -421,7 +581,7 @@ class App(FSM):
                 if (int(time.strftime("%H")) == 1) and (int(time.strftime("%M")) == 0):
                     self.set_p = 0
                     self.set_fsm_state('auto_night_charge')
-                    
+
         except Exception as e:
             self.log.error("[auto_feed] exception {}".format(e))
             self.set_fsm_state('error')
@@ -433,10 +593,10 @@ class App(FSM):
         if entry:
             self.log.info("MANUAL")
             self.set_p = 0
-            self.state_timer.start(5)
+            self.state_timer.start(50000)
 
         if self.ui_command and 'manual_set_p' in self.ui_command:
-            self.state_timer.start(5)
+            self.state_timer.start(50000)
             self.log.info("manual command by api: {}".format(self.ui_command))
             try:
                 self.set_p = self.ui_command['manual_set_p']
@@ -458,6 +618,7 @@ class App(FSM):
             self.mode = 'off'
 
     def get_state(self, bms_detail=False):
+
         """
         Get current state as dictionary (for API)
 
