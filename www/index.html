@@ -8,7 +8,7 @@
 
     <link rel="apple-touch-icon" href="apple-touch-icon-120x120.png" sizes="120x120">
     <meta name="author" content="Martin Steppuhn">
-    <link href="nobs.css?v={{version}}" rel="stylesheet">
+    <link href="nobs.css?v={{asset_ver}}" rel="stylesheet">
 
     <title>ESS</title>
 
@@ -319,7 +319,7 @@
                 <input id="manual-feed-slider" class="form-range" max="2400" min="0" step="10" type="range"
                        value="0">
             </div>
-            <div style="margin-top: 20px; margin-bottom: 30px; padding: 0; display: flex">
+            <div style="margin-top: 20px; margin-bottom: 10px; padding: 0; display: flex">
                 <div style="width: 50%; margin-right: 5px">
                     <button id="btn-manual-wakeup" class="btn btn-secondary" style="width: 100%;" type="button">Wakeup
                     </button>
@@ -327,6 +327,17 @@
 
                 <div style="width: 50%; margin-left: 5px">
                     <button id="btn-manual-sleep" class="btn btn-secondary" style="width: 100%;" type="button">Sleep
+                    </button>
+                </div>
+            </div>
+            <div style="margin-top: 0; margin-bottom: 30px; padding: 0; display: flex">
+                <div style="width: 50%; margin-right: 5px">
+                    <button id="btn-manual-shutdown" class="btn btn-outline-danger" style="width: 100%;" type="button">Raspberry herunterfahren
+                    </button>
+                </div>
+
+                <div style="width: 50%; margin-left: 5px">
+                    <button id="btn-manual-reboot" class="btn btn-outline-danger" style="width: 100%;" type="button">Raspberry neu starten
                     </button>
                 </div>
             </div>
@@ -353,8 +364,8 @@
 </script>
 
 
-<script src="pflow.js?v={{version}}"></script>
-<script src="app.js?v={{version}}"></script>
-<script src="utils.js?v={{version}}"></script>
+<script src="pflow.js?v={{asset_ver}}"></script>
+<script src="app.js?v={{asset_ver}}"></script>
+<script src="utils.js?v={{asset_ver}}"></script>
 </body>
 </html>

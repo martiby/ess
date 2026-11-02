@@ -86,6 +86,10 @@ class AppWeb:
                 "setting": [s['name'] for s in config['setting']]
             }
 
+            # cache buster for css / js: changes with every file change, browser loads new files
+            d["asset_ver"] = int(max(os.path.getmtime(os.path.join(config["www_path"], f))
+                                     for f in ("nobs.css", "pflow.js", "app.js", "utils.js")))
+
             try:
                 d["bms_pack_number"] = config['bms_us2000']['pack_number']
             except:

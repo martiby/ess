@@ -104,6 +104,12 @@ app.init = function () {
     $id('btn-manual-sleep').addEventListener('click', function () {
         app.manual_cmd = 'sleep';
     });
+    $id('btn-manual-shutdown').addEventListener('click', function () {
+        if (confirm('Raspberry wirklich herunterfahren? Das ESS ist danach aus, Neustart nur durch Strom aus/ein.')) app.manual_cmd = 'shutdown';
+    });
+    $id('btn-manual-reboot').addEventListener('click', function () {
+        if (confirm('Raspberry wirklich neu starten?')) app.manual_cmd = 'reboot';
+    });
 
     app.poll_state();
 }

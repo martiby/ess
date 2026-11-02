@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import time
 from copy import deepcopy
 from datetime import datetime
@@ -671,6 +672,12 @@ class App(FSM):
                 elif cmd == 'wakeup':
                     self.log.info("manual multiplus wakeup !")
                     self.multiplus.wakeup()
+                elif cmd in ('shutdown', 'reboot'):
+                    self.log.warning("manual raspberry {} ! (multiplus sleep, {} in 5s)".format(cmd, cmd))
+                    self.set_p = 0
+                    self.multiplus.sleep()  # no uncontrolled charge / feed without ess
+                    opt = '-h' if cmd == 'shutdown' else '-r'
+                    subprocess.Popen(['/bin/sh', '-c', 'sleep 5; sudo /sbin/shutdown {} now'.format(opt)])
             except:
                 self.set_p = 0
 
