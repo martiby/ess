@@ -322,7 +322,6 @@ app.show_detail_values = function (state) {
 
     set_val('meter-pv-p', state?.meterhub?.pv_p, ' W');
     set_val('meter-grid-p', state?.meterhub?.grid_p, ' W');
-    set_val('meter-home-p', state?.meterhub?.home_p, ' W');
     //set_val('meter-bat-p', state?.meterhub?.bat_p, ' W');
     if(config_enable_car) set_val('meter-car-p', state?.meterhub?.car_p, ' W');
     if(config_enable_heat) set_val('meter-heat-p', state?.meterhub?.heat_p, ' W');
