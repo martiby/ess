@@ -111,8 +111,49 @@ app.init = function () {
         if (confirm('Raspberry wirklich neu starten?')) app.manual_cmd = 'reboot';
     });
 
+    // BMS pack: toggle cell voltage table
+    document.querySelectorAll('.bms-toggle').forEach(function (ele) {
+        ele.addEventListener('click', function () {
+            let n = ele.getAttribute('data-pack');
+            let row = $id('bms-cells' + n);
+            let open = row.style.display === 'none';
+            row.style.display = open ? 'table-row' : 'none';
+            $id('bms-arrow' + n).innerHTML = open ? '&#9662;' : '&#9656;';
+            if (open) app.poll_cells();
+        });
+    });
+
     app.poll_state();
 }
+
+/**
+ * Read cell voltages (/api/bms), only if a cell table is open
+ */
+app.poll_cells = function () {
+    let open = Array.from(document.querySelectorAll('[id^="bms-cells"]')).some(r => r.style.display !== 'none');
+    if (!open) return;
+    fetch_json('api/bms', function (bms) {
+        (bms?.analog ?? []).forEach(function (pack, n) {
+            let u = pack?.u_cell ?? [];
+            let valid = u.filter(v => typeof v === 'number');
+            let u_min = valid.length ? Math.min(...valid) : null;
+            let u_max = valid.length ? Math.max(...valid) : null;
+            for (let c = 0; c < 15; c++) {
+                let ele = $id('cell' + n + '-' + c);
+                if (!ele) continue;
+                let v = u[c];
+                ele.textContent = (typeof v === 'number') ? v : '--';
+                ele.classList.toggle('cell-min', valid.length > 1 && u_min !== u_max && v === u_min);
+                ele.classList.toggle('cell-max', valid.length > 1 && u_min !== u_max && v === u_max);
+            }
+            let d = $id('cell' + n + '-delta');
+            if (d) {
+                d.textContent = (u_min === null) ? '--' : (u_max - u_min);
+                d.classList.toggle('cell-delta-high', u_min !== null && (u_max - u_min) >= 30);
+            }
+        });
+    });
+};
 
 /**
  * Cyclic polling the status (/api/status)
@@ -137,6 +178,7 @@ app.poll_state = function () {
             console.log('poll_state ERROR', error);
             self.show_state(null)
         }, post);
+    self.poll_cells();
     setTimeout(self.poll_state, 1000);
 };
 

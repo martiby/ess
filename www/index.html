@@ -97,6 +97,47 @@
             width: 15%;
         }
 
+        .bms-toggle {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .cell-table {
+            width: 100%;
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .cell-table tr, .cell-table tr:nth-child(even) {
+            background-color: transparent;
+        }
+
+        .cell-table td {
+            text-align: center;
+            padding: 1px 2px;
+            width: 12.5%;
+        }
+
+        .cell-no {
+            color: #888888;
+        }
+
+        .cell-min {
+            color: #1e6fd9;
+            font-weight: bold;
+        }
+
+        .cell-max {
+            color: #d93025;
+            font-weight: bold;
+        }
+
+        .cell-delta-high {
+            color: #d93025;
+            font-weight: bold;
+        }
+
 
         /*PFLOW MOD*/
 
@@ -240,13 +281,31 @@
 
                     % for i in range(bms_pack_number):
                     <tr>
-                        <td><strong>{{i+1}}</strong></td>
+                        <td id="bms-toggle{{i}}" class="bms-toggle" data-pack="{{i}}" title="Zellspannungen ein/aus"><strong>{{i+1}}</strong>&nbsp;<span id="bms-arrow{{i}}">&#9656;</span></td>
                         <td id="bms-soc{{i}}" class="bms-cell"></td>
                         <td id="bms-p{{i}}" class="bms-cell"></td>
                         <td id="bms-u{{i}}" class="bms-cell"></td>
                         <td id="bms-i{{i}}" class="bms-cell"></td>
                         <td id="bms-t{{i}}" class="bms-cell"></td>
                         <td id="bms-cycle{{i}}" class="bms-cell"></td>
+                    </tr>
+                    <tr id="bms-cells{{i}}" style="display: none;">
+                        <td colspan="7">
+                            <table class="cell-table">
+                                % for row in range(2):
+                                <tr>
+                                    % for col in range(8):
+                                    % c = row * 8 + col
+                                    % if c < 15:
+                                    <td><span class="cell-no">{{c+1}}</span><br><span id="cell{{i}}-{{c}}">--</span></td>
+                                    % else:
+                                    <td><span class="cell-no">&Delta; mV</span><br><span id="cell{{i}}-delta">--</span></td>
+                                    % end
+                                    % end
+                                </tr>
+                                % end
+                            </table>
+                        </td>
                     </tr>
                     % end
 
