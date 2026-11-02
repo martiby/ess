@@ -123,8 +123,85 @@ app.init = function () {
         });
     });
 
+    // Raspberry health view
+    $id('health-logo').addEventListener('click', function () {
+        let ele = $id('container-health');
+        let open = ele.style.display === 'none';
+        ele.style.display = open ? 'block' : 'none';
+        if (open) app.poll_health();
+    });
+
     app.poll_state();
 }
+
+/**
+ * Raspberry health data (/api/health), polled every 2s while the view is open
+ */
+app.poll_health = function () {
+    if ($id('container-health').style.display === 'none') return;
+    fetch_json('api/health', function (h) {
+        app.show_health(h);
+    }, function (error) {
+        console.log('poll_health ERROR', error);
+    });
+    setTimeout(app.poll_health, 2000);
+};
+
+app.show_health = function (h) {
+    let txt = function (id, value) {
+        $id(id).textContent = value;
+    };
+    let v = function (value, suffix) {
+        return (value === null || value === undefined) ? '--' : value + (suffix ?? '');
+    };
+    let warn = function (id, on) {
+        $id(id).style.color = on ? '#d93025' : '';
+        $id(id).style.fontWeight = on ? 'bold' : '';
+    };
+
+    txt('health-host', v(h?.hostname, ''));
+    txt('health-model', v(h?.model) + ', Kernel ' + v(h?.kernel));
+    txt('health-uptime', v(h?.uptime));
+    txt('health-cpu', v(h?.cpu_percent, ' %') + '  (Load ' + (h?.cpu_load ?? []).join(' / ') + ', ' + v(h?.cpu_count) + ' Kerne)');
+    warn('health-cpu', (h?.cpu_percent ?? 0) >= 80);
+    txt('health-temp', v(h?.cpu_temp, ' °C') + ' / ' + v(h?.cpu_mhz, ' MHz'));
+    warn('health-temp', (h?.cpu_temp ?? 0) >= 70);
+    let thr = h?.throttled_info ?? [];
+    txt('health-throttled', h?.throttled === null ? '--' : (thr.length ? thr.join(', ') : 'OK'));
+    warn('health-throttled', thr.length > 0);
+    txt('health-ram', v(h?.ram_used_mb) + ' / ' + v(h?.ram_total_mb, ' MB') + '  (' + v(h?.ram_percent, ' %') + ')'
+        + ((h?.swap_used_mb ?? 0) > 0 ? ', Swap ' + h.swap_used_mb + ' MB' : ''));
+    warn('health-ram', (h?.ram_percent ?? 0) >= 85);
+
+    let rows = '';
+    (h?.net ?? []).forEach(function (n) {
+        let name = n.name === 'eth0' ? 'LAN (eth0)' : (n.name === 'wlan0' ? 'WLAN (wlan0)' : n.name);
+        let info = '&darr; ' + v(n.rx_kbit, ' kbit/s') + ' &nbsp;&uarr; ' + v(n.tx_kbit, ' kbit/s');
+        let extra = [n.state];
+        if (n.speed_mbit) extra.push(n.speed_mbit + ' Mbit');
+        if (n.signal_dbm !== undefined && n.signal_dbm !== null) extra.push('Signal ' + n.signal_dbm + ' dBm');
+        extra.push('gesamt &darr;' + n.rx_total_mb + ' / &uarr;' + n.tx_total_mb + ' MB');
+        rows += '<tr class="health-net-row"><td>' + name + '</td><td class="text-right">' + info
+            + '<br><span style="font-size: 11px; color: #888888">' + extra.join(', ') + '</span></td></tr>';
+    });
+    document.querySelectorAll('.health-net-row').forEach(r => r.remove());  // same tbody -> row colors continue
+    $id('health-ram-row').insertAdjacentHTML('afterend', rows);
+
+    let disk = function (id, d) {
+        txt(id, d ? d.used_gb + ' / ' + d.total_gb + ' GB  (' + d.percent + ' %)' : '--');
+        warn(id, (d?.percent ?? 0) >= 85);
+    };
+    disk('health-disk-root', h?.disk_root);
+    disk('health-disk-boot', h?.disk_boot);
+
+    let sd = h?.sd ?? {};
+    txt('health-sd', v(sd.manufacturer) + ' ' + v(sd.name) + ', ' + v(sd.size_gb, ' GB') + ', Herstellung ' + v(sd.date)
+        + (sd.readonly ? ', NUR LESEN!' : '') + (sd.life_time ? ', Lebensdauer ' + sd.life_time : ''));
+    warn('health-sd', sd.readonly === true);
+    txt('health-sd-write', v(sd.written_mb, ' MB') + '  (Ø ' + v(sd.write_mb_day, ' MB/Tag') + ', aktuell ' + v(sd.write_kb_s, ' kB/s') + ')');
+    txt('health-sd-errors', v(sd.errors));
+    warn('health-sd-errors', (sd.errors ?? 0) > 0);
+};
 
 /**
  * Read cell voltages (/api/bms), only if a cell table is open

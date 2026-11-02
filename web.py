@@ -7,6 +7,7 @@ import bottle
 from bottle import Bottle, request, response, static_file, redirect, template
 
 from config import config
+from health import Health
 from session import Session
 from utils import dictget
 from version import __version__
@@ -27,6 +28,7 @@ class AppWeb:
         self.session = Session(password=config['password'])
 
         self.manual_session = None  # session of the client which has manual control
+        self.health = Health()  # raspberry health data
 
         # setup routes
         self.web.route('/', callback=self.web_index)  # hosting static files
@@ -35,6 +37,7 @@ class AppWeb:
         self.web.route('/api/state/<state>', callback=self.web_api_state)
         self.web.route('/api/set', callback=self.web_api_set, method=('GET', 'POST'))
         self.web.route('/api/bms', callback=self.web_api_bms)  # full bms data in json format
+        self.web.route('/api/health', callback=self.web_api_health)  # raspberry health data
         self.web.route('/debug/<cmd>', callback=self.web_debug_cmd)  # debug commands
         self.web.route('/log', callback=self.web_log)  # access to logfile
         self.web.route('/chart', callback=self.web_chart)  #
@@ -183,6 +186,19 @@ class AppWeb:
         else:
             self.log.error('/api/set without valid session')
         return self.app.get_state()
+
+    def web_api_health(self):
+        """
+        /api/health      Raspberry health data (cpu, ram, network, disk, sd card), only with valid session
+        """
+        response.content_type = 'application/json'
+        if not self.session.is_valid(request.get_cookie('session')):
+            return json.dumps({'session_invalid': True})
+        try:
+            return json.dumps(self.health.get())
+        except Exception as e:
+            self.log.error('/api/health exception: {}'.format(e))
+            return json.dumps({'error': str(e)})
 
     def web_api_bms(self):
         """
