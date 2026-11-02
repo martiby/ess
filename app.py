@@ -23,8 +23,13 @@ ESS Application
 """
 
 class App(FSM):
-    MAX_ERROR_ACKS_PER_DAY = 3
+    MAX_ERROR_ACKS_PER_DAY = 5
     ERROR_ACK_INTERVAL = 10
+    FEED_STUCK_POWER = 300  # [W] feed set value from which the multiplus must deliver power
+    FEED_STUCK_INV_P = 50  # [W] inverter power below this value = no feed
+    FEED_STUCK_TIME = 20  # [s] no feed for this time -> multiplus restart (sleep / wakeup)
+    FEED_STUCK_MAX_RESTARTS = 3  # max multiplus restarts per hour
+    MP2_RESTART_SLEEP_TIME = 15  # [s] multiplus sleep time at restart
 
     def __init__(self):
         super().__init__('init')
@@ -38,7 +43,7 @@ class App(FSM):
         self.gain_down = config.get('regulator_gain_down', self.gain)  # regulator gain, power down (faster)
         self.feed_target = config.get('feed_grid_target', (-5, 0))  # [W] (min, max) grid power target while feeding
         self.meterhub = ApiRequest(config['meterhub_address'], timeout=0.5, lifetime=10, log_name='meterhub')
-        self.ha = HaReport(config.get('ha_webhook_url'), interval=10, timeout=1)  # Home Assistant, own thread
+        self.ha = HaReport(config.get('ha_webhook_url'), interval=config.get('ha_interval', 10), timeout=1)  # Home Assistant, own thread
 
         if 'bms_us2000' in config:
             self.bms = US2000(**self.config['bms_us2000'])  # pass config to BMS class
@@ -77,6 +82,10 @@ class App(FSM):
         self.feed_throttle_timer = Timer()
         self.state_timer = Timer()
         self.mp2_wait_timer = Timer()  # max wait for multiplus 'on' in auto_charge / auto_feed
+        self.feed_stuck_timer = Timer()  # watchdog: multiplus on, high feed set value, but no power
+        self.mp2_restart_timer = Timer()  # multiplus restart (sleep / wakeup) in progress
+        self.mp2_restart_times = []  # time.time() of restarts in the last hour
+        self.mp2_restart_limit_logged = False
 
 
     def get_setting(self, name):
@@ -303,6 +312,47 @@ class App(FSM):
         self.state_timer.stop()  # no end by low power while waiting
         return True
 
+    def is_feed_stuck(self):
+        """
+        Watchdog in auto_feed: multiplus is on and gets a high feed set value, but delivers no power
+        (e.g. latched low battery state after a voltage drop). Restart multiplus by sleep / wakeup,
+        same as the manual reset, max FEED_STUCK_MAX_RESTARTS per hour.
+
+        :return: True if a multiplus restart was started
+        """
+        inv_p = dictget(self.multiplus.data, 'inv_p')
+        if self.set_p > -self.FEED_STUCK_POWER or inv_p is None or abs(inv_p) >= self.FEED_STUCK_INV_P \
+                or not self.is_multiplus_on():
+            self.feed_stuck_timer.stop()
+            return False
+        if self.feed_stuck_timer.is_stop():
+            self.feed_stuck_timer.start(self.FEED_STUCK_TIME)
+            return False
+        if not self.feed_stuck_timer.is_expired():
+            return False
+        self.feed_stuck_timer.stop()
+
+        t = time.time()
+        self.mp2_restart_times = [x for x in self.mp2_restart_times if t - x < 3600]
+        if len(self.mp2_restart_times) >= self.FEED_STUCK_MAX_RESTARTS:
+            if not self.mp2_restart_limit_logged:
+                self.mp2_restart_limit_logged = True
+                self.log.warning("multiplus feed stuck, restart limit {}/h reached".format(self.FEED_STUCK_MAX_RESTARTS))
+            return False
+        self.mp2_restart_limit_logged = False
+        self.mp2_restart_times.append(t)
+
+        m = self.multiplus.data
+        self.log.warning("multiplus feed stuck {}s: set_p={}W inv_p={}W state={} device_state={} led={} "
+                         "mp2_u={}V mp2_soc={}% bms_u={}V bms_soc={}%".format(
+                             self.FEED_STUCK_TIME, self.set_p, inv_p, dictget(m, 'state'), dictget(m, 'device_state_name'),
+                             dictget(m, 'led_info'), dictget(m, 'bat_u'), dictget(m, 'soc'), self.bms.voltage, self.bms.soc))
+        self.log.warning("multiplus restart {}/{} per hour (sleep / wakeup)".format(
+            len(self.mp2_restart_times), self.FEED_STUCK_MAX_RESTARTS))
+        self.multiplus.sleep()
+        self.mp2_restart_timer.start(self.MP2_RESTART_SLEEP_TIME)  # auto_idle wakes up multiplus after this time
+        return True
+
     # ==================================================================================================================
     #   INIT
     # ==================================================================================================================
@@ -368,12 +418,20 @@ class App(FSM):
                 self.state_timer.start(self.get_setting('idle_sleep_time'))
         try:
             mp2_state = self.multiplus.data['state']
-            if (self.is_feed_start() or self.is_charge_start()) and mp2_state == 'sleep':
+            if self.mp2_restart_timer.is_expired():
+                self.mp2_restart_timer.stop()
+                self.log.info("[auto-idle] multiplus restart, sleep time over, state={}".format(mp2_state))
+
+            if self.mp2_restart_timer.is_run():  # multiplus restart (sleep / wakeup) in progress, no wakeup / start
+                pass
+            elif (self.is_feed_start() or self.is_charge_start()) and mp2_state == 'sleep':
                 self.log.info("[auto-idle] wakeup")
                 self.state_timer.start(self.get_setting('idle_sleep_time'))
                 self.multiplus.wakeup()
 
-            if self.is_multiplus_on():  # regulation only when multiplus is on (not sleep / wait after wakeup)
+            if self.mp2_restart_timer.is_run():
+                pass
+            elif self.is_multiplus_on():  # regulation only when multiplus is on (not sleep / wait after wakeup)
                 if self.is_feed_start():
                     self.set_fsm_state('auto_feed')
                 elif self.is_charge_start():
@@ -575,6 +633,11 @@ class App(FSM):
                         self.set_fsm_state('auto_idle')
 
             self.set_p = -feed_set_p
+
+            if self.is_feed_stuck():  # multiplus on, but no feed -> restart multiplus (sleep / wakeup)
+                self.set_p = 0
+                self.set_fsm_state('auto_idle')
+                return
 
             # Night charge
             if (self.get_setting('charge_night_end_soc') > 0) and (self.bms.soc < self.get_setting('charge_night_end_soc')):

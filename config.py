@@ -9,6 +9,7 @@ config = { 'meterhub_address': 'http://10.0.0.158:8008',
     'regulator_gain_down': 0.25,  # charge/feed regulator gain per cycle, power down (faster)
     'feed_grid_target': (5, 10),  # [W] target range grid import at AMIS while feeding (min, max)
     'ha_webhook_url': secret.get('ha_webhook_url', ''),  # Home Assistant, set in config_secret.py, '' = off
+    'ha_interval': 5,                       # Home Assistant: send at least every x seconds
     'victron_mk3_port': '/dev/serial/by-id/usb-VictronEnergy_MK3-USB_Interface_HQ2217WWAC4-if00-port0',
 
     'bms_us2000': {
