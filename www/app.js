@@ -162,7 +162,7 @@ app.show_health = function (h) {
     txt('health-host', v(h?.hostname, ''));
     txt('health-model', v(h?.model) + ', Kernel ' + v(h?.kernel));
     txt('health-uptime', v(h?.uptime));
-    txt('health-cpu', v(h?.cpu_percent, ' %') + '  (Load ' + (h?.cpu_load ?? []).join(' / ') + ', ' + v(h?.cpu_count) + ' Kerne)');
+    txt('health-cpu', v(h?.cpu_percent, ' %') + '  (Systemlast ' + (h?.cpu_load ?? []).join(' / ') + ', ' + v(h?.cpu_count) + ' Kerne)');
     warn('health-cpu', (h?.cpu_percent ?? 0) >= 80);
     txt('health-temp', v(h?.cpu_temp, ' °C') + ' / ' + v(h?.cpu_mhz, ' MHz'));
     warn('health-temp', (h?.cpu_temp ?? 0) >= 70);
@@ -177,7 +177,7 @@ app.show_health = function (h) {
     (h?.net ?? []).forEach(function (n) {
         let name = n.name === 'eth0' ? 'LAN (eth0)' : (n.name === 'wlan0' ? 'WLAN (wlan0)' : n.name);
         let info = '&darr; ' + v(n.rx_kbit, ' kbit/s') + ' &nbsp;&uarr; ' + v(n.tx_kbit, ' kbit/s');
-        let extra = [n.state];
+        let extra = [{up: 'verbunden', down: 'getrennt', unknown: 'aktiv'}[n.state] ?? n.state];
         if (n.speed_mbit) extra.push(n.speed_mbit + ' Mbit');
         if (n.signal_dbm !== undefined && n.signal_dbm !== null) extra.push('Signal ' + n.signal_dbm + ' dBm');
         extra.push('gesamt &darr;' + n.rx_total_mb + ' / &uarr;' + n.tx_total_mb + ' MB');
@@ -290,7 +290,7 @@ app.show_state = function (state) {
 
     if (state?.session_invalid === true) {
         console.log("received state.session_invalid");
-        document.body.innerHTML = "<h2 style='text-align: center'>Invalid session</h2><h2 style='text-align: center'>starting reload...</h2>";
+        document.body.innerHTML = "<h2 style='text-align: center'>Sitzung ungültig</h2><h2 style='text-align: center'>Seite wird neu geladen ...</h2>";
         setTimeout(function () {
             location.reload();
         }, 2000);
@@ -310,7 +310,7 @@ app.show_state = function (state) {
     try {
         $id('time').textContent = state.ess.time.slice(11)
     } catch (e) {
-        $id('time').textContent = "DISCONNECTED";
+        $id('time').textContent = "KEINE VERBINDUNG";
     }
 
     self.show_dashboard_state(state)

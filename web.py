@@ -99,6 +99,7 @@ class AppWeb:
                 pass
 
 
+            response.set_header('Cache-Control', 'no-cache')  # browser always loads the current page
             return template('index.html', d)
             # return static_file('index.html', root=self.app.www_path)
         else:

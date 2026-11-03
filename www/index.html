@@ -201,7 +201,7 @@
         </div>
         <div id="time"></div>
         <div style="margin-left: auto; height: 70%; display: flex;  align-items: center; width: 50%">
-            <div id="health-logo" style="height: 100%; display: flex; margin-left: auto; margin-right: 12px; cursor: pointer;" title="Raspberry Health">
+            <div id="health-logo" style="height: 100%; display: flex; margin-left: auto; margin-right: 12px; cursor: pointer;" title="Raspberry Zustand">
                 <svg viewBox="0 0 100 100" height="100%">
                     <use href="#svg-chip"></use>
                 </svg>
@@ -225,14 +225,14 @@
             </tr>
             <tr><td>Modell</td><td id="health-model" class="text-right"></td></tr>
             <tr><td>Laufzeit</td><td id="health-uptime" class="text-right"></td></tr>
-            <tr><td>CPU Last</td><td id="health-cpu" class="text-right"></td></tr>
+            <tr><td>CPU-Last</td><td id="health-cpu" class="text-right"></td></tr>
             <tr><td>CPU Temperatur / Takt</td><td id="health-temp" class="text-right"></td></tr>
             <tr><td>Spannung / Drosselung</td><td id="health-throttled" class="text-right"></td></tr>
             <tr id="health-ram-row"><td>RAM</td><td id="health-ram" class="text-right"></td></tr>
             <tr><td>Speicher /</td><td id="health-disk-root" class="text-right"></td></tr>
             <tr><td>Speicher /boot</td><td id="health-disk-boot" class="text-right"></td></tr>
             <tr><td>SD-Karte</td><td id="health-sd" class="text-right"></td></tr>
-            <tr><td>SD geschrieben seit Boot</td><td id="health-sd-write" class="text-right"></td></tr>
+            <tr><td>SD geschrieben seit Start</td><td id="health-sd-write" class="text-right"></td></tr>
             <tr><td>SD Fehler (Kernel-Log)</td><td id="health-sd-errors" class="text-right"></td></tr>
         </table>
         <div style="font-size: 11px; color: #888888; margin: 4px 0 12px 0">
@@ -264,14 +264,14 @@
                         <td id="meter-pv-p" class="text-right"></td>
                     </tr>
                     <tr>
-                        <td>Mode</td>
+                        <td>Modus</td>
                         <td id="ess-mode">?</td>
                         <td></td>
                         <td>Netz</td>
                         <td id="meter-grid-p" class="text-right"></td>
                     </tr>
                     <tr id="ess-state-row">
-                        <td>State</td>
+                        <td>Zustand</td>
                         <td id="ess-state">?</td>
                         <td></td>
                         <td></td>
@@ -355,7 +355,7 @@
                         <th id="mp2-title" colspan="4" style="border-radius: 5px">MultiPlus-II</th>
                     </tr>
                     <tr>
-                        <td>State</td>
+                        <td>Zustand</td>
                         <td id="mp2-state" class="text-right"></td>
                         <td></td>
                         <td></td>
@@ -379,15 +379,15 @@
 
         <div class="row" style="margin-top: 30px;">
             <div class="btn-group" style="width: 100%">
-                <button data-mode="off" type="button" style="width: 33.3%" class="btn btn-outline-primary">OFF</button>
+                <button data-mode="off" type="button" style="width: 33.3%" class="btn btn-outline-primary">AUS</button>
                 <button data-mode="auto" type="button" style="width: 33.3%" class="btn btn-outline-primary">AUTO
                 </button>
-                <button data-mode="manual" type="button" style="width: 33.3%" class="btn btn-outline-primary">MANUAL
+                <button data-mode="manual" type="button" style="width: 33.3%" class="btn btn-outline-primary">MANUELL
                 </button>
             </div>
 
             <button id="btn-error-reset" class="btn btn-danger" type="button" style="width: 100%; margin-top: 20px;">
-                Error Reset
+                Fehler quittieren
             </button>
 
         </div>
@@ -397,7 +397,7 @@
         <div id="container-manual" style="display: none;">
             <div style="margin-top: 20px">
                 <label>
-                    <span>Charge:&nbsp;</span>
+                    <span>Laden:&nbsp;</span>
                     <span id="manual-charge-info">0</span>
                     <span>W</span>
                 </label>
@@ -406,7 +406,7 @@
             </div>
             <div style="margin-top: 5px">
                 <label>
-                    <span>Feed:&nbsp;</span>
+                    <span>Einspeisen:&nbsp;</span>
                     <span id="manual-feed-info">0</span>
                     <span>W</span>
                 </label>
@@ -415,12 +415,12 @@
             </div>
             <div style="margin-top: 20px; margin-bottom: 10px; padding: 0; display: flex">
                 <div style="width: 50%; margin-right: 5px">
-                    <button id="btn-manual-wakeup" class="btn btn-secondary" style="width: 100%;" type="button">Wakeup
+                    <button id="btn-manual-wakeup" class="btn btn-secondary" style="width: 100%;" type="button">Aufwecken
                     </button>
                 </div>
 
                 <div style="width: 50%; margin-left: 5px">
-                    <button id="btn-manual-sleep" class="btn btn-secondary" style="width: 100%;" type="button">Sleep
+                    <button id="btn-manual-sleep" class="btn btn-secondary" style="width: 100%;" type="button">Schlafen
                     </button>
                 </div>
             </div>
