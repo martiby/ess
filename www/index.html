@@ -138,6 +138,38 @@
             font-weight: bold;
         }
 
+        .health-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.45);
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+            padding: 50px 10px 20px 10px;
+        }
+
+        .health-box {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 34px 14px 4px 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        }
+
+        .health-close {
+            position: absolute;
+            top: 2px;
+            right: 12px;
+            font-size: 28px;
+            line-height: 1;
+            color: #555555;
+            cursor: pointer;
+            user-select: none;
+        }
+
 
         /*PFLOW MOD*/
 
@@ -218,7 +250,9 @@
 
     <!------------- Raspberry Health -------------->
 
-    <div id="container-health" style="display: none;">
+    <div id="container-health" class="health-overlay" style="display: none;">
+      <div class="health-box">
+        <span id="health-close" class="health-close" title="Schließen">&times;</span>
         <table id="health-table">
             <tr>
                 <th colspan="2" style="border-radius: 5px">Raspberry <span id="health-host"></span></th>
@@ -238,6 +272,7 @@
         <div style="font-size: 11px; color: #888888; margin: 4px 0 12px 0">
             SD-Karten haben keine SMART-Werte, angezeigt werden Kennung, Schreibmenge und Fehler im Kernel-Log.
         </div>
+      </div>
     </div>
 
     <!------------- PFlow Bars -------------->

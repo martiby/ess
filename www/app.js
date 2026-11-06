@@ -124,11 +124,21 @@ app.init = function () {
     });
 
     // Raspberry health view
-    $id('health-logo').addEventListener('click', function () {
-        let ele = $id('container-health');
-        let open = ele.style.display === 'none';
-        ele.style.display = open ? 'block' : 'none';
+    let health_show = function (open) {
+        $id('container-health').style.display = open ? 'flex' : 'none';
         if (open) app.poll_health();
+    };
+    $id('health-logo').addEventListener('click', function () {
+        health_show($id('container-health').style.display === 'none');
+    });
+    $id('health-close').addEventListener('click', function () {
+        health_show(false);
+    });
+    $id('container-health').addEventListener('click', function (evt) {
+        if (evt.target === this) health_show(false);  // click outside the box
+    });
+    document.addEventListener('keydown', function (evt) {
+        if (evt.key === 'Escape') health_show(false);
     });
 
     app.poll_state();
@@ -144,7 +154,8 @@ app.poll_health = function () {
     }, function (error) {
         console.log('poll_health ERROR', error);
     });
-    setTimeout(app.poll_health, 2000);
+    clearTimeout(app.health_timer);  // only one polling loop, also after fast close / open
+    app.health_timer = setTimeout(app.poll_health, 2000);
 };
 
 app.show_health = function (h) {
