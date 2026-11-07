@@ -48,9 +48,9 @@ config = { 'meterhub_address': 'http://10.0.0.158:8008',
             'charge_min_power': 100,  # [W] lowest charge power
             'charge_max_power': 1900,  # [W] highest charge power
             'charge_reserve_power': 80,  # [W] "distance" to excess power
-            'charge_end_soc': 95,  # [%] SOC at which charging is finished
+            'charge_end_soc': 100,  # [%] SOC at which charging is finished
             'charge_hysteresis_soc': 2,  # [%] SOC restart hysteresis
-            'charge_end_voltage': 53,  # [V] Voltage at which the charge is terminated
+            'charge_end_voltage': 53.5,  # [V] Voltage at which the charge is terminated (MP2 absorption 53.0 V)
             'charge_start_time': 2,  # [s] Time in which the start condition for the load must exist
             'charge_stop_time': 2,  # [s] Delay time in charging mode without charging
 
@@ -119,10 +119,6 @@ config = { 'meterhub_address': 'http://10.0.0.158:8008',
             'feed_end_soc': 25,  # [%] SOC at which feed-in is terminated
             'feed_hysteresis_soc': 2,  # [%] SOC restart hysteresis
             'charge_night_end_soc': 65, # [%] SOC to reach in night charge
-        },
-        {
-            'name': 'Laden bis 100%',
-            'charge_end_soc': 105,  # [%] SOC at which charging is finished
         },
         {   'name': 'Laden max 500W',
             'charge_max_power': 500,
