@@ -122,7 +122,7 @@ config = { 'meterhub_address': 'http://10.0.0.158:8008',
         },
         {
             'name': 'Laden bis 100%',
-            'charge_end_soc': 105,  # [%] SOC at which charging is finished
+            'charge_end_soc': 100,  # [%] SOC at which charging is finished
         },
         {   'name': 'Laden max 500W',
             'charge_max_power': 500,
