@@ -132,14 +132,16 @@ class AppWeb:
         /api/state      Webserver interface to get application state in JSON
         """
 
+        session_id = request.get_cookie('session')
+
         try:
-            post = json.loads(request.body.read())  # manual_set_p
-            self.app.ui_command = post
+            post = json.loads(request.body.read())  # manual_set_p, manual_cmd
+            # only from the logged in session with manual control
+            if self.session.is_valid(session_id) and session_id == self.manual_session:
+                self.app.ui_command = post
             # print("web post ui_command", post)
         except:
             pass
-
-        session_id = request.get_cookie('session')
 
         state = self.app.get_state()
 

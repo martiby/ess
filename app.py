@@ -133,6 +133,7 @@ class App(FSM):
             if self._fsm_state not in ('error', 'init'):
                 self.fsm_switch()
             self.update_in()
+            self.handle_power_command()  # shutdown / reboot, also in error state
             self.run_fsm()
             self.trace.push(deepcopy(self.get_state()))
 
@@ -312,6 +313,21 @@ class App(FSM):
         self.set_p = 0
         self.state_timer.stop()  # no end by low power while waiting
         return True
+
+    def handle_power_command(self):
+        """
+        Raspberry shutdown / reboot from the web interface (manual mode). Handled before the fsm,
+        so it also works in error / init state (e.g. multiplus or bms not reachable).
+        """
+        cmd = self.ui_command.get('manual_cmd') if isinstance(self.ui_command, dict) else None
+        if self.mode != 'manual' or cmd not in ('shutdown', 'reboot'):
+            return
+        self.ui_command.pop('manual_cmd')
+        self.log.warning("manual raspberry {} ! (multiplus sleep, {} in 5s)".format(cmd, cmd))
+        self.set_p = 0
+        self.multiplus.sleep()  # no uncontrolled charge / feed without ess
+        opt = '-h' if cmd == 'shutdown' else '-r'
+        subprocess.Popen(['/bin/sh', '-c', 'sleep 5; sudo /sbin/shutdown {} now'.format(opt)])
 
     def is_feed_stuck(self):
         """
@@ -672,12 +688,6 @@ class App(FSM):
                 elif cmd == 'wakeup':
                     self.log.info("manual multiplus wakeup !")
                     self.multiplus.wakeup()
-                elif cmd in ('shutdown', 'reboot'):
-                    self.log.warning("manual raspberry {} ! (multiplus sleep, {} in 5s)".format(cmd, cmd))
-                    self.set_p = 0
-                    self.multiplus.sleep()  # no uncontrolled charge / feed without ess
-                    opt = '-h' if cmd == 'shutdown' else '-r'
-                    subprocess.Popen(['/bin/sh', '-c', 'sleep 5; sudo /sbin/shutdown {} now'.format(opt)])
             except:
                 self.set_p = 0
 

@@ -29,6 +29,8 @@ class US2000(BMS):
         self.log = logging.getLogger(log_name)
         self.log.info('init port={}'.format(port))
         self.com = None
+        self.reconnect_time = 15  # [s] reopen serial port if no answer for this time
+        self.rx_time = time.perf_counter()  # last valid answer
 
         self._pack_u = [None] * self.pack_number
         self._pack_i = [None] * self.pack_number
@@ -95,6 +97,7 @@ class US2000(BMS):
                     self.data['analog'][i] = d
                     self.data['analog'][i]['time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     self.data['analog_timeout'][i] = time.perf_counter() + self.lifetime
+                    self.rx_time = time.perf_counter()
                 except IOError:
                     self.com = None
                     self.data['analog'][i] = None
@@ -112,6 +115,7 @@ class US2000(BMS):
                     self.data['alarm'][i] = d
                     self.data['alarm'][i]['time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     self.data['alarm_timeout'][i] = time.perf_counter() + self.lifetime
+                    self.rx_time = time.perf_counter()
                 except IOError:
                     self.com = None
                     self.data['alarm'][i] = None
@@ -122,6 +126,16 @@ class US2000(BMS):
                     self.log.debug("EXCEPTION read_alarm_info[{}] {}".format(i, e))
 
                 time.sleep(self.pause)
+
+            # no answer for some time: reopen port (e.g. USB adapter re-enumerated, old handle is dead)
+            if self.com is not None and time.perf_counter() - self.rx_time > self.reconnect_time:
+                self.log.warning("no answer for {}s, reopen serial port {}".format(self.reconnect_time, self.port))
+                try:
+                    self.com.close()
+                except Exception:
+                    pass
+                self.com = None
+                self.rx_time = time.perf_counter()
 
             self.process_data()
 
