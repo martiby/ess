@@ -61,6 +61,7 @@ class App(FSM):
 
         self.mode = 'auto'  # Operation mode: 'off', 'auto', 'manual'
         self.set_p = 0  # power set value
+        self.charge_top_limited = False  # charge power limited near full battery (log only once)
         self.reg_p = 0  # regulator power for auto_charge / auto_feed, reset at state entry
         self.setting = 0  # 0, 1, ... Index to usersettings from config/ui
 
@@ -99,6 +100,47 @@ class App(FSM):
             return self.config['setting'][self.setting][name]  # use custom setting
         else:
             return self.config['setting'][0][name]  # default or fallback to default
+
+    def charge_top_limit(self, p):
+        """
+        Limit charge power near full battery: highest pack SOC >= charge_top_soc or highest cell voltage
+        >= charge_top_cell_mv -> max charge_top_power, highest pack SOC >= 97% -> max 300 W.
+        Small current gives the BMS time for cell balancing and avoids cell over voltage alarms
+        (e.g. one pack already full and not charging -> all current into the other pack).
+        """
+        def setting(name, default):
+            try:
+                return self.get_setting(name)
+            except KeyError:
+                return default
+
+        if p is None or p <= 0:
+            return p
+        max_p = None
+        soc_high = self.bms.soc_high
+        if soc_high is None:  # bms error: pack values still available
+            try:
+                soc_high = max(s for s in self.bms._pack_soc if s is not None)
+            except Exception:
+                soc_high = None
+        cell_max = None
+        try:
+            cell_max = max(max(a['u_cell']) for a in self.bms.get_detail()['analog'] if a)
+        except Exception:
+            pass
+        if (soc_high is not None and soc_high >= setting('charge_top_soc', 90)) or \
+                (cell_max is not None and cell_max >= setting('charge_top_cell_mv', 3500)):
+            max_p = setting('charge_top_power', 500)
+            if soc_high is not None and soc_high >= 97:
+                max_p = min(max_p, 300)
+        if max_p is not None and p > max_p:
+            if not self.charge_top_limited:
+                self.log.info("charge power limited {}W -> {}W (soc_high={}% cell_max={}mV)".format(
+                    p, max_p, soc_high, cell_max))
+                self.charge_top_limited = True
+            return max_p
+        self.charge_top_limited = False
+        return p
 
     def reset_daily_error_ack_count(self):
         today = datetime.now().date()
@@ -497,7 +539,7 @@ class App(FSM):
                 self.set_p = 0
                 self.set_fsm_state('auto_idle')
             else:
-                self.set_p = self.get_setting('charge_max_power')
+                self.set_p = self.charge_top_limit(self.get_setting('charge_max_power'))
 
         except Exception as e:
             self.log.error("[auto_night_charge] exception {}".format(e))
@@ -535,10 +577,7 @@ class App(FSM):
                 self.reg_p = self.get_setting('charge_max_power')
             if self.reg_p < 0:
                 self.reg_p = 0
-            if self.bms.soc >= 95 and self.reg_p > 500:
-                self.reg_p = 500
-            if self.bms.soc >= 97 and self.reg_p > 300:
-                self.reg_p = 300
+            self.reg_p = self.charge_top_limit(self.reg_p)  # near full: small charge power
 
             #print("p={} pv={} home_all={} home={} car={}".format(p, self.pv_p, self.home_all_p, self.home_p, self.car_p) )
             # ToDo Filter     schnell runter, langsam hoch
@@ -679,7 +718,7 @@ class App(FSM):
             self.state_timer.start(50000)
             self.log.info("manual command by api: {}".format(self.ui_command))
             try:
-                self.set_p = self.ui_command['manual_set_p']
+                self.set_p = self.charge_top_limit(self.ui_command['manual_set_p'])  # also manual: near full
 
                 cmd = self.ui_command.get('manual_cmd', None)
                 if cmd == 'sleep':

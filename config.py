@@ -53,6 +53,9 @@ config = { 'meterhub_address': 'http://10.0.0.158:8008',
             'charge_end_voltage': 53.5,  # [V] Voltage at which the charge is terminated (MP2 absorption 53.0 V)
             'charge_start_time': 2,  # [s] Time in which the start condition for the load must exist
             'charge_stop_time': 2,  # [s] Delay time in charging mode without charging
+            'charge_top_soc': 90,  # [%] above this SOC (highest pack) charge power is limited
+            'charge_top_cell_mv': 3500,  # [mV] or above this cell voltage (highest cell)
+            'charge_top_power': 500,  # [W] max charge power near full (balancing, no cell over voltage)
 
             'feed_min_power': 40,  # [W] Minimum feed power
             'feed_max_power': 2800,  # [W] Maximum feed power
