@@ -234,6 +234,17 @@ app.poll_cells = function () {
                 ele.classList.toggle('cell-min', valid.length > 1 && u_min !== u_max && v === u_min);
                 ele.classList.toggle('cell-max', valid.length > 1 && u_min !== u_max && v === u_max);
             }
+            let info = bms?.info?.[n] ?? {};
+            let id_text = [];
+            if (info.serial) id_text.push('S/N ' + info.serial);
+            if (info.firmware) id_text.push('Firmware ' + info.firmware + ' (' + info.firmware_main + ')');
+            $id('bms-id' + n).textContent = id_text.length ? id_text.join(' \u00b7 ') : '--';
+            let lim = info.limit;
+            let num = (v, dec) => v.toFixed(dec).replace('.', ',');
+            $id('bms-limit' + n).textContent = lim
+                ? 'Laden: ' + (lim.chg_on ? 'erlaubt' : 'gesperrt') + ', max. ' + num(lim.i_chg, 0) + ' A bis ' + num(lim.u_chg, 1) + ' V'
+                  + ' \u00b7 Entladen: ' + (lim.dis_on ? 'erlaubt' : 'gesperrt') + ', max. ' + num(lim.i_dis, 0) + ' A bis ' + num(lim.u_dis, 1) + ' V'
+                : '--';
             let d = $id('cell' + n + '-delta');
             if (d) {
                 d.textContent = (u_min === null) ? '--' : (u_max - u_min);

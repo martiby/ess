@@ -119,6 +119,13 @@
             width: 12.5%;
         }
 
+        .bms-info {
+            font-size: 11px;
+            line-height: 1.3;
+            padding: 2px 2px 4px 2px;
+            text-align: left;
+        }
+
         .cell-no {
             color: #888888;
         }
@@ -361,6 +368,10 @@
                     </tr>
                     <tr id="bms-cells{{i}}" style="display: none;">
                         <td colspan="7">
+                            <div class="bms-info">
+                                <div id="bms-id{{i}}">--</div>
+                                <div id="bms-limit{{i}}">--</div>
+                            </div>
                             <table class="cell-table">
                                 % for row in range(2):
                                 <tr>

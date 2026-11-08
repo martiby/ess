@@ -116,8 +116,8 @@ def read_serial_number(com, address):
     """
     tx = encode_cmd(address + 2, 0x93, "{:02X}".format(address + 2).encode('utf-8'))
     # print(tx)
-    com.write(tx)  # send command to battery
     com.reset_input_buffer()  # clear receive buffer
+    com.write(tx)  # send command to battery
     rx = com.read_until(b'\r')  # read
     # print(rx)
     frame = decode_frame(rx)  # check if valid frame
@@ -125,6 +125,63 @@ def read_serial_number(com, address):
         return {'serial': frame[7:7 + 16].rstrip(b'\x00').decode("utf-8")}
     else:
         raise ValueError('receive failed dump={}'.format(rx))
+
+
+def read_software_version(com, address):
+    """
+    Read firmware version
+
+    TX: 0x96 with pack address
+    RX: b'~20024600400C020203000609FB45\r'    {'firmware': '2.3', 'firmware_main': '0.6.9'}
+
+    :param com: PySerial
+    :param address: Address 0, ...
+    :return: Dictionary with firmware
+    """
+    tx = encode_cmd(address + 2, 0x96, "{:02X}".format(address + 2).encode('utf-8'))
+    com.reset_input_buffer()
+    com.write(tx)
+    rx = com.read_until(b'\r')
+    frame = decode_frame(rx)
+    if frame is not None:
+        return parse_software_version(frame)
+    else:
+        raise ValueError('receive failed dump={}'.format(rx))
+
+
+def parse_software_version(frame):
+    return {'firmware': "{}.{}".format(frame[7], frame[8]),
+            'firmware_main': "{}.{}.{}".format(frame[9], frame[10], frame[11])}
+
+
+def read_charge_mgmt(com, address):
+    """
+    Read charge / discharge limits the BMS currently allows
+
+    TX: 0x92 with pack address
+    RX: b'~20024600B01402CE40AFC80000FC1840F935\r'
+    {'u_chg': 52.8, 'u_dis': 45.0, 'i_chg': 0.0, 'i_dis': 100.0, 'chg_on': False, 'dis_on': True, 'full_req': False}
+
+    :param com: PySerial
+    :param address: Address 0, ...
+    :return: Dictionary with limits
+    """
+    tx = encode_cmd(address + 2, 0x92, "{:02X}".format(address + 2).encode('utf-8'))
+    com.reset_input_buffer()
+    com.write(tx)
+    rx = com.read_until(b'\r')
+    frame = decode_frame(rx)
+    if frame is not None:
+        return parse_charge_mgmt(frame)
+    else:
+        raise ValueError('receive failed dump={}'.format(rx))
+
+
+def parse_charge_mgmt(frame):
+    u_chg, u_dis, i_chg, i_dis, flags = struct.unpack_from(">HHhhB", frame, 7)
+    return {'u_chg': u_chg / 1000, 'u_dis': u_dis / 1000,
+            'i_chg': i_chg / 10, 'i_dis': abs(i_dis) / 10,
+            'chg_on': bool(flags & 0x80), 'dis_on': bool(flags & 0x40), 'full_req': bool(flags & 0x08)}
 
 
 def read_alarm_info(com, address):

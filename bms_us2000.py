@@ -3,7 +3,7 @@ import logging
 import time
 from datetime import datetime
 from threading import Thread
-from pylontech import read_analog_value, read_alarm_info
+from pylontech import read_analog_value, read_alarm_info, read_serial_number, read_software_version, read_charge_mgmt
 import serial  # pip install pyserial
 
 
@@ -44,7 +44,10 @@ class US2000(BMS):
                      "alarm_timeout": [time.perf_counter() + self.lifetime] * pack_number,
                      "frame_count": 0,
                      "error_analog": [0] * self.pack_number,
-                     "error_alarm": [0] * self.pack_number}
+                     "error_alarm": [0] * self.pack_number,
+                     "info": [{} for _ in range(pack_number)]}  # serial, firmware, limits
+        self.info_interval = 10  # [s] read interval for charge / discharge limits
+        self.info_next = [0] * pack_number
 
         self.connect()
         self.thread = Thread(target=self.run, daemon=True)
@@ -126,6 +129,7 @@ class US2000(BMS):
                     self.log.debug("EXCEPTION read_alarm_info[{}] {}".format(i, e))
 
                 time.sleep(self.pause)
+                self.read_info(i)
 
             # no answer for some time: reopen port (e.g. USB adapter re-enumerated, old handle is dead)
             if self.com is not None and time.perf_counter() - self.rx_time > self.reconnect_time:
@@ -138,6 +142,34 @@ class US2000(BMS):
                 self.rx_time = time.perf_counter()
 
             self.process_data()
+
+    def read_info(self, i):
+        """
+        Serial number and firmware (once) and charge / discharge limits (every info_interval) of a pack.
+        Only for display, a failed read has no influence on the error handling.
+        """
+        t = time.perf_counter()
+        if self.com is None or t < self.info_next[i]:
+            return
+        self.info_next[i] = t + self.info_interval
+        info = self.data['info'][i]
+        try:
+            if 'serial' not in info:
+                info.update(read_serial_number(self.com, i))
+                time.sleep(self.pause)
+            if 'firmware' not in info:
+                info.update(read_software_version(self.com, i))
+                time.sleep(self.pause)
+            info['limit'] = read_charge_mgmt(self.com, i)
+            self.log.debug("read_info[{}] {}".format(i, info))
+            time.sleep(self.pause)
+        except IOError:
+            self.com = None
+            info.pop('limit', None)
+            self.log.error("read_info: io port failed")
+        except Exception as e:
+            info.pop('limit', None)
+            self.log.debug("EXCEPTION read_info[{}] {}".format(i, e))
 
     def process_data(self):
         """
